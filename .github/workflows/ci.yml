@@ -9,6 +9,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default; the deploy job grants itself pages/id-token.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
