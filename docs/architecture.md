@@ -20,21 +20,21 @@ Key game features:
 
 ## 2. Technology Decisions
 
-| Concern | Choice | Rationale / alternatives considered |
-|---|---|---|
-| Language | TypeScript (strict) | Type safety pays off for ECS component schemas and data-driven content |
-| Build/dev server | Vite | Instant HMR, outputs pure static files for GitHub Pages / itch.io / any static host |
-| Renderer | PixiJS v8 (WebGL, Canvas fallback) | Battle-tested 2D sprite renderer with batching, filters, texture atlases. **Alternative: Phaser** — rejected; it is a monolith whose scene/physics model fights a custom ECS and a custom sailing simulation. We only need rendering, not its arcade physics |
-| ECS | bitecs | Minimal, fast, structure-of-arrays ECS that stays out of the way. Alternatives: miniplex (more ergonomic, slower) or a small hand-rolled ECS — noted as fallbacks |
-| Physics | Custom kinematic model (pure functions, no library) | The sailing model is the game's differentiator; planck.js/matter.js rigid-body physics would not model sail/keel/rudder force balance any better than ~100 lines of testable math |
-| Tile maps | Tiled editor → JSON export, thin custom render layer over Pixi | Industry-standard editor; our maps are simple enough that pixi-tilemap (unmaintained) isn't needed |
-| Pathfinding (tap-to-walk) | Small A* over the tile grid (hand-rolled or `pathfinding` npm lib) | Grid is already in memory for collision |
-| Audio (later phase) | Howler | De-facto standard, tiny |
-| Dialogue content | Data-driven JSON now; Yarn Spinner evaluated later if branching gets complex | Keeps writing decoupled from code |
-| Dev previewer UI | Tweakpane for parameter panels + plain DOM | Zero-framework controls for sliders/toggles; no React needed |
-| Unit tests | Vitest | Sailing model and economy are pure functions — highly testable headlessly |
-| Lint/format | ESLint + Prettier | Standard |
-| Hosting/CI | GitHub Actions → build → deploy `dist/` to GitHub Pages | Static site requirement satisfied for free; same pipeline runs lint+tests |
+| Concern                   | Choice                                                                       | Rationale / alternatives considered                                                                                                                                                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Language                  | TypeScript (strict)                                                          | Type safety pays off for ECS component schemas and data-driven content                                                                                                                                                                                       |
+| Build/dev server          | Vite                                                                         | Instant HMR, outputs pure static files for GitHub Pages / itch.io / any static host                                                                                                                                                                          |
+| Renderer                  | PixiJS v8 (WebGL, Canvas fallback)                                           | Battle-tested 2D sprite renderer with batching, filters, texture atlases. **Alternative: Phaser** — rejected; it is a monolith whose scene/physics model fights a custom ECS and a custom sailing simulation. We only need rendering, not its arcade physics |
+| ECS                       | bitecs                                                                       | Minimal, fast, structure-of-arrays ECS that stays out of the way. Alternatives: miniplex (more ergonomic, slower) or a small hand-rolled ECS — noted as fallbacks                                                                                            |
+| Physics                   | Custom kinematic model (pure functions, no library)                          | The sailing model is the game's differentiator; planck.js/matter.js rigid-body physics would not model sail/keel/rudder force balance any better than ~100 lines of testable math                                                                            |
+| Tile maps                 | Tiled editor → JSON export, thin custom render layer over Pixi               | Industry-standard editor; our maps are simple enough that pixi-tilemap (unmaintained) isn't needed                                                                                                                                                           |
+| Pathfinding (tap-to-walk) | Small A* over the tile grid (hand-rolled or `pathfinding` npm lib)           | Grid is already in memory for collision                                                                                                                                                                                                                      |
+| Audio (later phase)       | Howler                                                                       | De-facto standard, tiny                                                                                                                                                                                                                                      |
+| Dialogue content          | Data-driven JSON now; Yarn Spinner evaluated later if branching gets complex | Keeps writing decoupled from code                                                                                                                                                                                                                            |
+| Dev previewer UI          | Tweakpane for parameter panels + plain DOM                                   | Zero-framework controls for sliders/toggles; no React needed                                                                                                                                                                                                 |
+| Unit tests                | Vitest                                                                       | Sailing model and economy are pure functions — highly testable headlessly                                                                                                                                                                                    |
+| Lint/format               | ESLint + Prettier                                                            | Standard                                                                                                                                                                                                                                                     |
+| Hosting/CI                | GitHub Actions → build → deploy `dist/` to GitHub Pages                      | Static site requirement satisfied for free; same pipeline runs lint+tests                                                                                                                                                                                    |
 
 ## 3. Runtime Architecture
 
@@ -94,7 +94,7 @@ Modeled as a 2-DOF force balance per boat, integrated with semi-implicit Euler:
 - **Sail**: sheet (control line) length sets a maximum boom angle from centerline.
   The boom weather-vanes toward the apparent wind until the sheet goes taut. Sail
   force magnitude ∝ |apparent wind|² × angle-of-attack efficiency curve, applied
-  along the sail's force axis; sail *luffs* (force → ~0) when pointed too close to
+  along the sail's force axis; sail _luffs_ (force → ~0) when pointed too close to
   the wind — so tacking and points of sail emerge naturally rather than being
   scripted.
 - **Hull/keel**: anisotropic quadratic water resistance in the boat frame — low
