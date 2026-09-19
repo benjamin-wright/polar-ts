@@ -26,9 +26,11 @@ export class RenderSync {
     for (const eid of query(this.world, [Sprite, Transform])) {
       const sprite = this.sprites.get(eid);
       if (!sprite) continue;
-      sprite.position.set(Transform.x[eid], Transform.y[eid]);
-      sprite.rotation = Transform.rotation[eid];
-      sprite.zIndex = Sprite.zIndex[eid];
+      // ?? guards against bitecs's uninitialized (undefined) store slots, which
+      // would otherwise become NaN on the sprite and collapse it to zero size.
+      sprite.position.set(Transform.x[eid] ?? 0, Transform.y[eid] ?? 0);
+      sprite.rotation = Transform.rotation[eid] ?? 0;
+      sprite.zIndex = Sprite.zIndex[eid] ?? 0;
     }
   }
 

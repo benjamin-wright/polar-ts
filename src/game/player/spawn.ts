@@ -19,6 +19,12 @@ export function spawnPlayer(world: World, x: number, y: number): number {
   addComponent(world, eid, MoveTarget);
   Transform.x[eid] = x;
   Transform.y[eid] = y;
+  // bitecs array stores are uninitialized (undefined) until written — writing
+  // undefined into Pixi's rotation yields NaN and a zero-size sprite, so every
+  // numeric field must get an explicit default here.
+  Transform.rotation[eid] = 0;
+  Velocity.x[eid] = 0;
+  Velocity.y[eid] = 0;
   Sprite.kind[eid] = 'player';
   Sprite.zIndex[eid] = 1;
   Health.current[eid] = 100;
