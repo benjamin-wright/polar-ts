@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
-// base is relative so the build works on GitHub Pages project sites (/<repo>/).
+// base is relative so the same build resolves assets when published under a
+// subpath (prod /polar/, QA /polar-qa/).
 export default defineConfig({
   base: './',
   build: {
