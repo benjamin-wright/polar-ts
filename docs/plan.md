@@ -8,7 +8,7 @@ See [architecture.md](./architecture.md) for the design this plan implements.
 Vite + TS + Pixi + bitecs, ESLint/Prettier/Vitest, CI → GitHub Pages, one sprite
 on screen, pointer input working on mobile.
 
-*Deliverable: empty but deployed app.*
+_Deliverable: empty but deployed app._
 
 ## Phase 1 — Walking demo (smallest executable game)
 
@@ -16,7 +16,7 @@ Tiled island map, tile rendering + collision, player sprite with idle/walk
 animation, tap-to-walk with A*, follow camera, mobile viewport. Includes dev
 previewer panel #1 (animation preview) since asset iteration starts here.
 
-*Deliverable: walk around an island on your phone.*
+_Deliverable: walk around an island on your phone._
 
 ## Phase 2 — Sailing
 
@@ -49,7 +49,7 @@ performance pass (sprite batching, chunk culling).
 
 ## Phasing principle
 
-Phases 1–2 are deliberately thin vertical slices; every later phase only *adds*
+Phases 1–2 are deliberately thin vertical slices; every later phase only _adds_
 systems, components, and data files without restructuring — the ECS +
 fixed-order system pipeline is what guarantees progressive enhancement stays
 cheap.
