@@ -37,12 +37,21 @@ NPCs on schedules, interaction prompts, dialogue popups with portraits
 
 Resource nodes (wood, fish, ore…), inventory UI, crafting-lite if desired.
 
-## Phase 6 — Economy
+## Phase 6 — Combat: the persuasion system
+
+Turn-based debate encounters, per [combat.md](./combat.md): party recruits,
+self-esteem/anger/composure stats, persuade/reassure/tactic/memento actions,
+mindset affinities with a deduction layer, turn-queue order, and a DOM-overlay
+battle UI that leans on the dialogue/popup machinery. All moves, mindsets,
+affinity multipliers, and penguin personalities are data-driven JSON under
+`assets/data/`.
+
+## Phase 7 — Economy
 
 Ports with markets, price engine, trading UI, stock drift over time; previewer
 panel #4 (economy sandbox).
 
-## Phase 7 — Polish
+## Phase 8 — Polish
 
 Audio (Howler), weather/wind time-variation, save/load, PWA hardening,
 performance pass (sprite batching, chunk culling).
@@ -52,4 +61,5 @@ performance pass (sprite batching, chunk culling).
 Phases 1–2 are deliberately thin vertical slices; every later phase only _adds_
 systems, components, and data files without restructuring — the ECS +
 fixed-order system pipeline is what guarantees progressive enhancement stays
-cheap.
+cheap. Combat (Phase 6) follows the same rule: a new, additive ECS system file
+plus JSON data, respecting the fixed system execution order.
