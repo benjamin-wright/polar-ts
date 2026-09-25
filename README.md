@@ -7,7 +7,11 @@ in TypeScript on an ECS core and served as a static site. See
 
 ## Getting started
 
+Use the Node.js version pinned in `.nvmrc`:
+
 ```sh
+nvm install
+nvm use
 npm ci
 npm run dev        # dev server (game at /, dev previewer at /dev/)
 ```
@@ -33,7 +37,8 @@ npm run dev        # dev server (game at /, dev previewer at /dev/)
 - `src/dev/` — dev previewer entry (panels arrive in later phases)
 - `assets/` — sprites, tilemaps, data-driven JSON content
 
-CI (lint, format check, tests, build) runs on every PR, then publishes
-`dist/` over SSH with rsync: PRs deploy to a QA directory (`polar-qa/`) and
-pushes to `main` deploy to production (`polar/`). Publishing reuses the
+CI (lint, format check, tests, build) runs on PRs targeting `main` and pushes to
+`main`, then publishes `dist/` over SSH with rsync: PRs deploy to a shared QA
+directory (`polar-qa/`, served at `/polar-qa/`) and pushes to `main` deploy to
+production (`polar/`, served at `/polar/`). Publishing uses the
 `SSH_USER` / `SSH_HOST` / `SSH_PASSWORD` secrets.

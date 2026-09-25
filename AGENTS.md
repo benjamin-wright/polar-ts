@@ -25,4 +25,4 @@ changes must follow:
 - When adding a new game system, add it as a new ECS system file rather than
   modifying unrelated systems, and respect the fixed system execution order.
 - Each phase of the plan must remain deployable as a static site; don't break
-  the GitHub Pages build.
+  the static build or the GitHub Actions deployment via rsync over SSH.

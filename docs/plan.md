@@ -1,12 +1,14 @@
 # polar-ts — Implementation Plan
 
-Phased delivery, each phase ending in a deployable build on GitHub Pages.
+Phased delivery, each phase ending in a deployable static build. GitHub Actions
+publishes `dist/` via rsync over SSH to `polar/` for production and `polar-qa/`
+for QA.
 See [architecture.md](./architecture.md) for the design this plan implements.
 
 ## Phase 0 — Scaffold
 
-Vite + TS + Pixi + bitecs, ESLint/Prettier/Vitest, CI → GitHub Pages, one sprite
-on screen, pointer input working on mobile.
+Vite + TS + Pixi + bitecs, ESLint/Prettier/Vitest, CI with static deployment via
+rsync over SSH, one sprite on screen, pointer input working on mobile.
 
 _Deliverable: empty but deployed app._
 
