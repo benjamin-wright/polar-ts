@@ -1,7 +1,8 @@
-import { Application } from 'pixi.js';
+import { Application, Container } from 'pixi.js';
 import islandUrl from '../assets/tilemaps/island.json?url';
 import tilesUrl from '../assets/tilemaps/island-tiles.png?url';
 import movementConfig from '../assets/data/player-movement.json';
+import cameraConfig from '../assets/data/camera.json';
 import { GameLoop, InputSystem } from './core';
 import { loadJson } from './core/AssetLoader';
 import { movementSystem } from './ecs/systems/movement';
@@ -11,6 +12,8 @@ import { spawnPlayer } from './game/player/spawn';
 import { isFootprintClear } from './game/world/collision';
 import { collisionSystem } from './game/world/collisionSystem';
 import { parseTileMap } from './game/world/tilemap';
+import { FollowCamera } from './render/FollowCamera';
+import { cameraSyncSystem } from './render/cameraSync';
 import { RenderSync } from './render/RenderSync';
 import { TileMapView } from './render/TileMapView';
 import { buildSpriteTextures } from './render/sprites';
@@ -28,7 +31,8 @@ async function main(): Promise<void> {
     // Crisp sprites on high-density phone screens.
     resolution: Math.min(window.devicePixelRatio || 1, 2),
     autoDensity: true,
-    antialias: true,
+    // Multisampling exposes seams between adjoining tiles as the camera pans.
+    antialias: false,
     // We drive render() ourselves each tick so nested sprites are always
     // rendered with up-to-date transforms (deterministic across browsers).
     autoStart: false,
@@ -38,19 +42,25 @@ async function main(): Promise<void> {
   buildSpriteTextures(app.renderer);
 
   const world = createGameWorld();
+  const camera = new FollowCamera(map.bounds, cameraConfig.zoom);
   const input = new InputSystem(
     app.canvas,
-    (point) => tileMap.toWorld(point) !== null,
+    (point) => camera.toWorld(point) !== null,
     movementConfig.tap,
   );
   const renderSync = new RenderSync(world);
-  tileMap.container.addChild(renderSync.container);
-  app.stage.addChild(tileMap.container);
-  const fitMap = (): void => tileMap.fit(app.screen.width, app.screen.height);
-  app.renderer.on('resize', fitMap);
-  fitMap();
-
-  spawnPlayer(world, map.spawn.x, map.spawn.y);
+  // Terrain and entities share one transform; future screen overlays stay on stage.
+  const worldView = new Container({ label: 'world' });
+  worldView.addChild(tileMap.container, renderSync.container);
+  app.stage.addChild(worldView);
+  const player = spawnPlayer(world, map.spawn.x, map.spawn.y);
+  const resizeCamera = (): void => {
+    input.cancelHold();
+    camera.resize(app.screen.width, app.screen.height);
+    cameraSyncSystem(player, camera, worldView);
+  };
+  app.renderer.on('resize', resizeCamera);
+  resizeCamera();
   renderSync.sync();
 
   const loop = new GameLoop();
@@ -60,15 +70,17 @@ async function main(): Promise<void> {
       playerControllerSystem(
         world,
         {
-          held: held ? tileMap.toWorld(held) : null,
+          held: held ? camera.toWorld(held) : null,
           following,
-          tap: tap ? tileMap.toWorld(tap) : null,
+          tap: tap ? camera.toWorld(tap) : null,
           cancelled,
         },
         step,
       );
       movementSystem(world, step);
       collisionSystem(world, map, step);
+      // Update every fixed step, including catch-up ticks within a single frame.
+      cameraSyncSystem(player, camera, worldView);
     });
     renderSync.sync();
     app.render();

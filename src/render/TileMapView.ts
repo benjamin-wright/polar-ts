@@ -5,10 +5,7 @@ import type { TileMap } from '../game/world/tilemap';
 export class TileMapView {
   readonly container = new Container();
 
-  private constructor(
-    private readonly map: TileMap,
-    atlas: Texture,
-  ) {
+  private constructor(map: TileMap, atlas: Texture) {
     atlas.source.scaleMode = 'nearest';
     const textures = Array.from(
       { length: map.tileset.tileCount },
@@ -46,28 +43,5 @@ export class TileMapView {
       throw new Error(`Tileset image ${map.tileset.image} dimensions do not match the map`);
     }
     return new TileMapView(map, atlas);
-  }
-
-  /** Fit the whole first island until the following camera lands in subtask 1.4. */
-  fit(width: number, height: number): void {
-    const scale = Math.min(1, width / this.map.bounds.width, height / this.map.bounds.height);
-    this.container.scale.set(scale);
-    this.container.position.set(
-      (width - this.map.bounds.width * scale) / 2,
-      (height - this.map.bounds.height * scale) / 2,
-    );
-  }
-
-  toWorld(point: { x: number; y: number }): { x: number; y: number } | null {
-    const position = this.container.toLocal(point);
-    if (
-      position.x < 0 ||
-      position.y < 0 ||
-      position.x >= this.map.bounds.width ||
-      position.y >= this.map.bounds.height
-    ) {
-      return null;
-    }
-    return { x: position.x, y: position.y };
   }
 }

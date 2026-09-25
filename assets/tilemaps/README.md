@@ -48,13 +48,20 @@ Vite. Keep assets relative to the app so the same build works at `/polar/` and
 
 ## Preview this slice
 
-Run `nvm use`, then `npm run dev`. The full island is centred and scaled down
-when necessary, with the blue placeholder player at the spawn. Tap to walk to a
-location after release. Hold a finger or the primary mouse button to follow it,
-drag to steer, and release a drag or long hold to stop. Leaving the island's
-rectangular viewport during a hold, losing focus, or resizing cancels movement;
-press again to resume. Presses in the surrounding margin are ignored. The camera
-still fits the whole map until the follow-camera task in 1.4.
+Run `nvm use`, then `npm run dev`. The blue placeholder player starts at the spawn
+with a following camera. Tap to walk to a location after release. Hold a finger or
+the primary mouse button to follow it, drag to steer, and release a drag or long
+hold to stop. Leaving the playable viewport during a hold, losing focus, or
+resizing cancels movement; press again to resume. Presses in any surrounding
+margin are ignored.
+
+`assets/data/camera.json` sets the camera zoom (currently 2 CSS pixels per world
+pixel). The view follows the player directly, clamps at map bounds, and centres
+each axis where the map is smaller than the viewport. Holding a stationary
+pointer ahead keeps steering as the world scrolls. A completed tap is converted
+once into a world destination and stays fixed during panning. Terrain and entities
+share a world container; screen overlays can remain outside it. The fixed logical
+viewport and safe-area layout remain in task 1.7.
 
 `assets/data/player-movement.json` configures `walkSpeed` in world pixels per
 second and `deadZone` as a radius in world pixels. Reaching the aim point or its
@@ -78,10 +85,16 @@ reach the destination. Tap beyond a rock and check that movement stops at the
 rock. Then hold diagonally into its edge: the player should slide along it; drag
 away to return to open ground. Repeat at the shoreline, and check that a long
 hold or drag stops on release. Drag into the surrounding margin and resize
-during a tap journey to check cancellation. Repeat at a phone-sized viewport.
+during a tap journey to check cancellation. Hold a stationary pointer ahead to
+explore beyond the initial view, and confirm that landmarks move together with
+the terrain while the player stays near the centre until the camera clamps.
+Repeat after resizing to portrait and landscape; on a view larger than the map,
+check that the island is centred and presses in the margins are ignored.
 `npm test` validates map exports, steering, pointer cancellation, player-only
 control, tap completion/cancellation, and swept collision (sliding, tile seams,
-corners, narrow gaps, large steps, and blocked holds).
+corners, narrow gaps, large steps, and blocked holds). Camera tests cover bounds,
+coordinate conversion, canvas offsets, resize, stationary holds during catch-up
+steps, and fixed tap destinations while panning.
 `npm run build` produces the static assets for subpath smoke testing.
 
 Format reference: [Tiled JSON map format](https://doc.mapeditor.org/en/stable/reference/json-map-format/).

@@ -151,16 +151,27 @@ Add a shared world container for terrain and entities, a follow camera in
 `render/`, and paired world/screen coordinate conversions. Keep screen overlays
 outside the world transform. Initially use direct following; smoothing is optional.
 
-- [ ] The camera follows the player and clamps to map bounds; maps smaller
+- [x] The camera follows the player and clamps to map bounds; maps smaller
       than the viewport are centred consistently.
-- [ ] The latest held screen position is converted through the current camera
+- [x] The latest held screen position is converted through the current camera
       transform each simulation step, accounting for canvas position, camera
       offset, and scale, even when there are no new pointer-move events. A tap
       destination is converted once and remains fixed as the camera pans.
-- [ ] Coordinate conversion and camera-bound tests cover map edges, non-unit
+- [x] Coordinate conversion and camera-bound tests cover map edges, non-unit
       scale, and small maps. A stationary held pointer keeps steering while the
       camera pans; when the camera is clamped, reaching the aim/dead zone stops
       movement without overshoot.
+
+Verified on 2026-09-25: 143 unit tests pass, including 14 camera geometry checks
+and six input/movement/collision/camera integration tests. Tests cover catch-up
+steps with a stationary hold, arrival after camera clamping, fixed tap targets,
+resolved collision positions, shared terrain/entity transforms, screen overlays,
+and canvas offsets after resize. The camera uses direct following at a data-driven
+2× zoom; small map axes are centred. Multisampling is disabled to prevent visible
+tile seams during fractional camera movement. Lint, formatting, and the
+typechecked production build pass. Browser checks via `npm run dev` cover camera
+panning, tap arrival, and input after resizing. Real-phone and deployed-build
+validation remain outstanding under 1.7/1.8.
 
 ## 1.5 — Animate the player character
 

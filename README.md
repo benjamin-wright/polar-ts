@@ -22,7 +22,10 @@ drag to steer. Releasing a drag or long hold stops movement. Taps stop at the fi
 obstacle; held movement slides along rocks, shorelines, and map boundaries.
 Walking speed, the follow dead zone, tap thresholds, and the collision footprint
 are configured in `assets/data/player-movement.json`.
-The following camera is the next Phase 1 task. See the
+The camera follows the player, clamps at map edges, and centres maps smaller than
+the view. `assets/data/camera.json` sets the zoom (currently 2×). Held steering
+keeps following the pointer as the view pans; completed taps keep their world
+destination. Player animation is the next Phase 1 task. See the
 [map format and preview notes](assets/tilemaps/README.md) to edit the island or
 review this slice.
 
