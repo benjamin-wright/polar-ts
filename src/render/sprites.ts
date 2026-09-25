@@ -1,35 +1,50 @@
-import { Container, Graphics, Texture } from 'pixi.js';
-import type { Renderer } from 'pixi.js';
+import { Assets, Rectangle, Texture } from 'pixi.js';
+import type { Sprite } from 'pixi.js';
+import { animationFrame } from '../core/animation';
+import type { AnimationState, SpriteSheetDefinition } from '../core/animation';
 
-/**
- * Placeholder textures until real sprite sheets land in phase 1 (Tiled map,
- * idle/walk animations). They are generated procedurally with the renderer
- * rather than loaded from SVG data-URIs: iOS Safari's SVG→texture decode is
- * unreliable and can silently yield a blank texture, which is exactly the
- * "no sprite on iPhone" symptom phase 0 must avoid. Swapping in sheet-based
- * textures later touches only this file.
- */
-const cache = new Map<string, Texture>();
+/** Pixi textures share one PNG source; playback remains in the simulation. */
+export class SpriteSheet {
+  private readonly frames: Texture[];
 
-function drawPlayer(): Graphics {
-  return new Graphics()
-    .roundRect(1, 1, 30, 30, 4)
-    .fill(0x38bdf8) // ice-blue body
-    .stroke({ width: 2, color: 0xe0f2fe }); // light outline
-}
+  constructor(
+    readonly definition: SpriteSheetDefinition,
+    atlas: Texture,
+  ) {
+    const { frameWidth, frameHeight, columns, rows } = definition;
+    if (atlas.width !== frameWidth * columns || atlas.height !== frameHeight * rows) {
+      throw new Error(`Sprite sheet ${definition.image} dimensions do not match its metadata`);
+    }
+    atlas.source.scaleMode = 'nearest';
+    this.frames = Array.from(
+      { length: columns * rows },
+      (_, index) =>
+        new Texture({
+          source: atlas.source,
+          frame: new Rectangle(
+            (index % columns) * frameWidth,
+            Math.floor(index / columns) * frameHeight,
+            frameWidth,
+            frameHeight,
+          ),
+        }),
+    );
+  }
 
-const SPRITE_BUILDERS: Record<string, () => Container> = {
-  player: drawPlayer,
-};
+  texture(state: AnimationState): Texture {
+    return this.frames[animationFrame(this.definition, state)];
+  }
 
-/** Generates (once) the texture for every Sprite kind. */
-export function buildSpriteTextures(renderer: Renderer): void {
-  for (const [kind, build] of Object.entries(SPRITE_BUILDERS)) {
-    cache.set(kind, renderer.generateTexture(build()));
+  static async load(definition: SpriteSheetDefinition, url: string): Promise<SpriteSheet> {
+    return new SpriteSheet(definition, await Assets.load<Texture>(url));
   }
 }
 
-/** Synchronous lookup — call after `buildSpriteTextures()` ran. */
-export function spriteTexture(kind: string): Texture {
-  return cache.get(kind) ?? Texture.WHITE;
+/** Identical frame geometry for game entities and preview sprites. */
+export function applySpriteFrame(sprite: Sprite, sheet: SpriteSheet, state: AnimationState): void {
+  sprite.texture = sheet.texture(state);
+  const { anchor, displayWidth, displayHeight } = sheet.definition;
+  sprite.anchor.set(anchor.x, anchor.y);
+  sprite.width = displayWidth;
+  sprite.height = displayHeight;
 }

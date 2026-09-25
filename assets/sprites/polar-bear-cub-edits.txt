@@ -1,0 +1,27 @@
+Side walk revision
+
+Use case: precise-object-edit
+Edit target: the supplied polar bear cub sprite sheet, a transparent 1254x1254 PNG arranged in four equal columns and four equal rows.
+Primary request: fix the LEFT-facing and RIGHT-facing walking cycles so the cub visibly walks with its rear legs too, rather than dragging its hindquarters.
+Change ONLY the four walking cells: row 2 columns 3 and 4 (left-facing walk), and row 3 columns 3 and 4 (right-facing walk). All other twelve cells must remain exactly unchanged, including idle, blink, down-facing, and up-facing sprites.
+In each of these four cells keep the cub's head, ears, face, torso, tail, white/blue palette, navy outline, scale, position, and ground level unchanged. Redraw the legs below the torso into clearly opposing quadruped steps:
+- Walking column 3: the visible near FRONT paw reaches forward toward the nose; the visible near HIND paw extends well backward behind the rump in a push-off, with the toes on the ground. The far hind paw is lifted and swung forward beneath the belly, visibly separated and shaded blue.
+- Walking column 4: the visible near FRONT paw is back under the chest; the visible near HIND paw bends and swings well FORWARD beneath the belly, lifted clear of the ground. The far hind paw extends backward to support weight.
+Mirror those relative directions for the right-facing row. The rear paw displacement between the two walking cells must be substantial and unmistakable at small game size, at least as clear as the front paw movement. Show the alternating gap between the hind paws and bend at the hock. Keep anatomically plausible four-legged cub poses; no extra limbs.
+Constraints: preserve the exact canvas size and 4x4 cell registration; no rescaling, rearranging, cropping, shadows, labels, new objects, or changes to the twelve other cells. Preserve genuine transparent alpha, never a painted checkerboard.
+
+Rear paw pose correction
+
+Use case: precise-object-edit
+Edit target: the supplied 1254x1254 polar bear cub sprite atlas, four columns by four rows.
+Make two production corrections:
+1. Remove the entire gray checkerboard background and replace it with ACTUAL TRANSPARENT ALPHA (zero-opacity pixels). The checkerboard is unwanted baked-in image content. Do not draw any background pattern or opaque color. Deliver a transparent PNG, like a cutout sticker sheet.
+2. Correct ONLY the outermost REAR leg in the LAST column of the LEFT and RIGHT rows, so it alternates with the preceding walking frame:
+- Row 2 column 4: the bear faces left. Its rear leg is the RIGHTMOST leg under the rump. Bend that rightmost rear leg forward toward the LEFT underneath the belly. Move its paw conspicuously 70 pixels left and 25 pixels up, lifted for a forward step. Show the far rear supporting leg behind it in blue shadow. The viewer must clearly see that the hind paw has swung forward instead of remaining extended backward.
+- Row 3 column 4: the bear faces right. Its rear leg is the LEFTMOST leg under the rump. Bend that leftmost rear leg forward toward the RIGHT underneath the belly. Move its paw conspicuously 70 pixels right and 25 pixels up, lifted for a forward step. Show the far rear supporting leg behind it in blue shadow.
+Do not modify front legs to achieve this: the change is to the hind legs under the rump. Column 3 keeps the rear leg extended backward, so columns 3 and 4 clearly alternate rear push-off and rear forward swing.
+Preserve the canvas dimensions 1254x1254, exact 4x4 registration, ground level, head/torso placement, size, style, palette, and every other pose. No grid lines, captions, props, shadows, or new limbs. Transparent alpha everywhere between sprites, not a visible checkerboard.
+
+Final transparency correction
+
+Use case: background-extraction. Remove the gray checkerboard background from this sprite sheet and output a TRANSPARENT PNG with actual alpha transparency. Keep all sixteen polar bear sprites exactly as they are, in their existing positions and at their current scale. Remove every checkerboard pixel between and around the bears, including gaps between their legs. The space outside the bears must have alpha=0, not a painted checkerboard, gray, black, or white. Preserve the 1254x1254 canvas, all bear details, clean edges, and the 4-by-4 arrangement. Only the background changes.

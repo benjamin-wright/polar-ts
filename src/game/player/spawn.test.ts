@@ -2,6 +2,7 @@ import { hasComponent } from 'bitecs';
 import { describe, expect, it } from 'vitest';
 import movementConfig from '../../../assets/data/player-movement.json';
 import {
+  Animation,
   Collider,
   Health,
   PlayerControlled,
@@ -31,6 +32,10 @@ describe('spawnPlayer', () => {
     expect(hasComponent(world, eid, PlayerControlled)).toBe(true);
     expect(Velocity.x[eid]).toBe(0);
     expect(Velocity.y[eid]).toBe(0);
+    expect(hasComponent(world, eid, Animation)).toBe(true);
+    expect(Animation.clip[eid]).toBe('idle');
+    expect(Animation.facing[eid]).toBe('down');
+    expect(Animation.elapsed[eid]).toBe(0);
   });
 
   it('initializes the configured footprint and a stationary collision segment', () => {

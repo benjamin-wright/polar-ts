@@ -4,27 +4,78 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#101827" />
-    <title>polar-ts — dev previewer</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 2rem;
-        background: #101827;
-        color: #e5e7eb;
-        font-family: system-ui, sans-serif;
-      }
-      a {
-        color: #7dd3fc;
-      }
-    </style>
+    <title>Animation preview — polar-ts</title>
   </head>
   <body>
-    <h1>polar-ts dev previewer</h1>
-    <p>
-      Panels (sprite/animation preview, asset browser, sailing force visualizer, economy sandbox)
-      arrive in phases 1, 2 and 7 — see docs/architecture.md §4.
-    </p>
-    <p><a href="../index.html">← back to game</a></p>
+    <main class="studio">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">POLAR / DEVELOPER TOOLS</p>
+          <h1>Animation preview</h1>
+          <p class="intro">Explore a pose. Find the right rhythm.</p>
+        </div>
+        <a id="back-to-game" class="back-link" href="../">← Back to game</a>
+      </header>
+
+      <p id="error" class="error" role="alert" hidden></p>
+      <div class="workspace">
+        <section class="preview-card" aria-label="Sprite preview">
+          <div class="preview-heading">
+            <h2 id="sheet-title">Loading sprite…</h2>
+            <span id="playback-state" class="status">Loading</span>
+          </div>
+          <div id="preview-stage" class="checkerboard"></div>
+          <div class="preview-caption">
+            <span id="pose-label">Walk / Right</span>
+            <span id="frame-readout">Frame 1 of 4</span>
+          </div>
+        </section>
+
+        <fieldset id="controls" class="controls-card" disabled>
+          <legend class="sr-only">Animation controls</legend>
+          <h2>Animation controls</h2>
+          <div class="selectors">
+            <label class="sheet-field" for="sheet"
+              >Sprite sheet
+              <select id="sheet"></select>
+            </label>
+            <label for="animation"
+              >Animation
+              <select id="animation"></select>
+            </label>
+            <label for="facing"
+              >Facing
+              <select id="facing"></select>
+            </label>
+          </div>
+
+          <div class="control-section">
+            <div class="transport">
+              <button id="previous-frame" type="button" aria-label="Previous frame">← Frame</button>
+              <button id="toggle-play" class="primary" type="button">Pause</button>
+              <button id="next-frame" type="button" aria-label="Next frame">Frame →</button>
+            </div>
+            <label for="frame">Frame <output id="frame-value" for="frame">1 / 4</output></label>
+            <input id="frame" type="range" min="0" max="3" step="1" value="0" />
+            <div class="range-notes"><span>Start</span><span id="duration">0.50 s loop</span></div>
+            <p class="hint">Scrub or step through frames to pause the loop.</p>
+          </div>
+
+          <div class="control-section tuning">
+            <label for="speed"
+              >Playback speed <output id="speed-value" for="speed">1× · 8 fps</output></label
+            >
+            <input id="speed" type="range" min="0.25" max="2" step="0.25" value="1" />
+            <label for="zoom">Zoom <output id="zoom-value" for="zoom">4×</output></label>
+            <input id="zoom" type="range" min="1" max="8" step="1" value="4" />
+          </div>
+          <p class="session-note">Preview changes stay in this session.</p>
+        </fieldset>
+      </div>
+      <footer>
+        POLAR <span>Animation studio · <span id="asset-name">Loading asset…</span></span>
+      </footer>
+    </main>
     <script type="module" src="/src/dev/main.ts"></script>
   </body>
 </html>

@@ -1,6 +1,7 @@
 import { addComponent, addEntity } from 'bitecs';
 import movementConfig from '../../../assets/data/player-movement.json';
 import {
+  Animation,
   Collider,
   Health,
   PlayerControlled,
@@ -17,6 +18,7 @@ export function spawnPlayer(world: World, x: number, y: number): number {
   addComponent(world, eid, Transform);
   addComponent(world, eid, Velocity);
   addComponent(world, eid, Sprite);
+  addComponent(world, eid, Animation);
   addComponent(world, eid, Health);
   addComponent(world, eid, PlayerControlled);
   addComponent(world, eid, Collider);
@@ -38,6 +40,9 @@ export function spawnPlayer(world: World, x: number, y: number): number {
   Velocity.y[eid] = 0;
   Sprite.kind[eid] = 'player';
   Sprite.zIndex[eid] = 1;
+  Animation.clip[eid] = 'idle';
+  Animation.facing[eid] = 'down';
+  Animation.elapsed[eid] = 0;
   Health.current[eid] = 100;
   Health.max[eid] = 100;
   return eid;

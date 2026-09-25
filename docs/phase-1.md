@@ -183,13 +183,23 @@ Add an initial sprite sheet and JSON metadata for frames, animations, playback
 rates, and facing. Keep animation state renderer-agnostic and texture handling
 in `render/`. Record asset provenance or licensing with any imported artwork.
 
-- [ ] Idle and walk animations use actual resolved movement, including sliding.
+- [x] Idle and walk animations use actual resolved movement, including sliding.
       Releasing a drag/long hold, reaching the destination/dead zone, or becoming
       fully blocked returns the character to idle while preserving its facing.
-- [ ] Playback is driven by elapsed simulation time, with tests for frame
+- [x] Playback is driven by elapsed simulation time, with tests for frame
       progression and state transitions; walking does not restart every tick.
 - [ ] The sprite's anchor and ground position agree with its collision
       footprint, and its assets load in the deployed static build.
+
+Implemented on 2026-09-25: a transparent polar bear cub atlas, JSON frame/facing
+metadata, pure playback functions, and an animation system after collision.
+164 tests pass, including frame progression, clip transitions, persistent gait
+when turning, wall-slide facing, idle on arrival/release/contact, and render
+anchor stability. Lint, formatting, and the typechecked production build pass.
+The sprite's ground anchor is configured alongside the atlas metadata; the
+24 × 24 collision footprint remains centred on the entity's world position.
+Browser checks use `npm run dev`; deployed-asset validation remains outstanding.
+See [sprite provenance and demo steps](../assets/sprites/README.md).
 
 ## 1.6 — Deliver the animation previewer
 
@@ -200,12 +210,27 @@ Build previewer panel #1 with Tweakpane/plain DOM controls and the shared
 animation/rendering code. Add the documented `?dev` entry route with subpath-safe
 navigation to the previewer.
 
-- [ ] Select a sheet and animation, play/pause, scrub frames, change playback
+- [x] Select a sheet and animation, play/pause, scrub frames, change playback
       speed, and zoom against a checkerboard background.
-- [ ] The preview matches in-game frame order and timing; controls do not
+- [x] The preview matches in-game frame order and timing; controls do not
       alter the saved asset data or run the game simulation behind the preview.
-- [ ] Both `/dev/` and the `?dev` route work beneath production and QA subpaths;
+- [x] Both `/dev/` and the `?dev` route work beneath production and QA subpaths;
       returning to the game works without a reload loop.
+
+Verified locally on 2026-09-25: the plain-DOM previewer selects sheets, clips, and
+facing, with pause/resume, a frame slider, previous/next frame buttons, speed,
+and zoom. Playback and sprite geometry are shared with the game; preview state
+does not modify the asset definitions. Tests cover game/preview timing parity,
+pause/scrub/resume, frame wrapping, repeated idle frames, selection changes,
+speed, definition isolation, cached texture reuse, and deployment-relative routes.
+186 tests, lint, formatting, and the typechecked static build pass.
+
+Browser checks on the existing `npm run dev` server exercised the controls and
+the built files temporarily mounted at `/polar/` and `/polar-qa/`: `?dev`
+redirects, direct preview reloads, image loading, and return-to-game navigation
+passed with no console warnings/errors. Temporary mounts were removed after the
+checks; no additional server was started. Actual deployment and real-phone
+validation remain under 1.8. See the [preview instructions](../README.md#animation-previewer).
 
 ## 1.7 — Make the viewport work on phones
 

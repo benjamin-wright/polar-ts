@@ -88,7 +88,13 @@ index.html   dev/index.html   (two Vite entry points)
 ### 3.3 ECS systems
 
 Systems run in a fixed order:
-`Input → PlayerController | SailingController → WindField → SailForces → HullForces → Integration → Collision → EconomyTick → CameraSync → RenderSync`.
+`Input → PlayerController | SailingController → WindField → SailForces → HullForces → Integration → Collision → Animation → EconomyTick → CameraSync → RenderSync`.
+
+Animation reads collision-resolved velocity and advances a renderer-independent
+clip, facing, and elapsed time. Pixi adapters select atlas textures from this
+state without advancing playback. Sprite layouts, anchors, frame sequences, and
+rates live in `assets/data/`; the game and previewer share those definitions and
+the pure frame-selection functions.
 
 Systems are plain functions over queries, so new game systems (fishing, weather,
 quests) are additive files — this is the main extensibility seam.
@@ -174,8 +180,12 @@ imposes no constraint here.
 
 ## 4. Developer Previewer
 
-Second Vite entry (`/dev/`) sharing `core/`, `ecs/`, and `game/` modules, gated to
-also be reachable in production via `?dev` for demos. Panels (Tweakpane):
+Second Vite entry (`/dev/`) sharing the core playback and render adapters, also
+reachable in production via `?dev` for demos. The game bootstrap redirects before
+importing or starting the game. Relative navigation keeps both entries beneath
+the deployment directory and clears the preview flag on return. The animation
+panel uses labelled native DOM controls; later parameter-heavy panels can use
+Tweakpane. Panels:
 
 1. **Sprite/animation preview** — pick a sheet + animation, scrub frames, adjust
    fps, zoom on a checkerboard.
@@ -185,6 +195,12 @@ also be reachable in production via `?dev` for demos. Panels (Tweakpane):
    resistance, net); numeric readouts; "jibe risk" indicator. Doubles as the
    physics tuning workbench and a demo of the simulation.
 4. **Economy sandbox** (later) — watch stock/price curves, inject trades.
+
+The animation preview owns its selection, elapsed time, pause state, speed, and
+zoom. It shares `advancePlayback`, `animationFrameIndex`, and `applySpriteFrame`
+with the game, and uses the same fixed-step clock without a game world or player
+input system. Sheet definitions remain unchanged. The render asset registry
+caches frame textures across sheet selections, and failed loads may be retried.
 
 ## 5. Key Risks & Mitigations
 

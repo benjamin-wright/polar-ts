@@ -1,0 +1,16 @@
+{
+  "image": "polar-bear-cub.png",
+  "label": "Polar bear cub",
+  "frameWidth": 313.5,
+  "frameHeight": 313.5,
+  "columns": 4,
+  "rows": 4,
+  "displayWidth": 48,
+  "displayHeight": 48,
+  "anchor": { "x": 0.5, "y": 0.82 },
+  "facings": { "down": 0, "left": 1, "right": 2, "up": 3 },
+  "animations": {
+    "idle": { "frames": [0, 0, 0, 0, 0, 0, 0, 1], "fps": 4 },
+    "walk": { "frames": [2, 0, 3, 0], "fps": 8 }
+  }
+}

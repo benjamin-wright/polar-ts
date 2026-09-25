@@ -1,3 +1,5 @@
+import type { AnimationClip, Facing } from '../core/animation';
+
 /**
  * Shared ECS components as structure-of-arrays stores, indexed by entity id.
  * bitecs sizes stores to the world's entity capacity on registration. Keep
@@ -27,6 +29,13 @@ export const Sprite = {
   kind: [] as string[],
   /** Draw order hint; render adapter sorts on it. */
   zIndex: [] as number[],
+};
+
+/** Simulation-owned playback state; render adapters only select its texture. */
+export const Animation = {
+  clip: [] as AnimationClip[],
+  facing: [] as Facing[],
+  elapsed: [] as number[],
 };
 
 /** Hit points, for later sailing damage and hazards. */

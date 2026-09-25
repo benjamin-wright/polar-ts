@@ -5,6 +5,7 @@ import movementConfig from '../assets/data/player-movement.json';
 import cameraConfig from '../assets/data/camera.json';
 import { GameLoop, InputSystem } from './core';
 import { loadJson } from './core/AssetLoader';
+import { animationSystem } from './ecs/systems/animation';
 import { movementSystem } from './ecs/systems/movement';
 import { createGameWorld } from './ecs/world';
 import { playerControllerSystem } from './game/player/playerController';
@@ -16,7 +17,7 @@ import { FollowCamera } from './render/FollowCamera';
 import { cameraSyncSystem } from './render/cameraSync';
 import { RenderSync } from './render/RenderSync';
 import { TileMapView } from './render/TileMapView';
-import { buildSpriteTextures } from './render/sprites';
+import { loadSpriteSheet } from './render/spriteAssets';
 
 async function main(): Promise<void> {
   const map = parseTileMap(await loadJson(islandUrl));
@@ -39,7 +40,7 @@ async function main(): Promise<void> {
   });
   document.getElementById('app')?.appendChild(app.canvas);
 
-  buildSpriteTextures(app.renderer);
+  const playerSheet = await loadSpriteSheet('player');
 
   const world = createGameWorld();
   const camera = new FollowCamera(map.bounds, cameraConfig.zoom);
@@ -48,7 +49,7 @@ async function main(): Promise<void> {
     (point) => camera.toWorld(point) !== null,
     movementConfig.tap,
   );
-  const renderSync = new RenderSync(world);
+  const renderSync = new RenderSync(world, { player: playerSheet });
   // Terrain and entities share one transform; future screen overlays stay on stage.
   const worldView = new Container({ label: 'world' });
   worldView.addChild(tileMap.container, renderSync.container);
@@ -79,6 +80,7 @@ async function main(): Promise<void> {
       );
       movementSystem(world, step);
       collisionSystem(world, map, step);
+      animationSystem(world, step);
       // Update every fixed step, including catch-up ticks within a single frame.
       cameraSyncSystem(player, camera, worldView);
     });
