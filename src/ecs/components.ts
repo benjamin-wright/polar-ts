@@ -8,6 +8,9 @@
 export const Transform = {
   x: [] as number[],
   y: [] as number[],
+  /** Position before the latest integration step, used by collision/animation. */
+  previousX: [] as number[],
+  previousY: [] as number[],
   /** Radians, 0 = facing right, positive = clockwise (screen space). */
   rotation: [] as number[],
 };
@@ -39,3 +42,9 @@ export const Inventory = {
 
 /** Marker for the entity controlled by player input. */
 export const PlayerControlled = {};
+
+/** Axis-aligned ground footprint centred on Transform, in world pixels. */
+export const Collider = {
+  halfWidth: [] as number[],
+  halfHeight: [] as number[],
+};

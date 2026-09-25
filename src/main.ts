@@ -1,12 +1,15 @@
 import { Application } from 'pixi.js';
 import islandUrl from '../assets/tilemaps/island.json?url';
 import tilesUrl from '../assets/tilemaps/island-tiles.png?url';
+import movementConfig from '../assets/data/player-movement.json';
 import { GameLoop, InputSystem } from './core';
 import { loadJson } from './core/AssetLoader';
 import { movementSystem } from './ecs/systems/movement';
 import { createGameWorld } from './ecs/world';
 import { playerControllerSystem } from './game/player/playerController';
 import { spawnPlayer } from './game/player/spawn';
+import { isFootprintClear } from './game/world/collision';
+import { collisionSystem } from './game/world/collisionSystem';
 import { parseTileMap } from './game/world/tilemap';
 import { RenderSync } from './render/RenderSync';
 import { TileMapView } from './render/TileMapView';
@@ -14,6 +17,9 @@ import { buildSpriteTextures } from './render/sprites';
 
 async function main(): Promise<void> {
   const map = parseTileMap(await loadJson(islandUrl));
+  if (!isFootprintClear(map, map.spawn, movementConfig.footprint)) {
+    throw new Error('Player spawn does not have room for the collision footprint');
+  }
   const tileMap = await TileMapView.load(map, { 'island-tiles.png': tilesUrl });
   const app = new Application();
   await app.init({
@@ -49,6 +55,7 @@ async function main(): Promise<void> {
       const held = input.heldPoint();
       playerControllerSystem(world, held ? tileMap.toWorld(held) : null, step);
       movementSystem(world, step);
+      collisionSystem(world, map, step);
     });
     renderSync.sync();
     app.render();

@@ -1,6 +1,14 @@
 import { hasComponent } from 'bitecs';
 import { describe, expect, it } from 'vitest';
-import { Health, PlayerControlled, Sprite, Transform, Velocity } from '../../ecs/components';
+import movementConfig from '../../../assets/data/player-movement.json';
+import {
+  Collider,
+  Health,
+  PlayerControlled,
+  Sprite,
+  Transform,
+  Velocity,
+} from '../../ecs/components';
 import { createGameWorld } from '../../ecs/world';
 import { spawnPlayer } from './spawn';
 
@@ -23,6 +31,16 @@ describe('spawnPlayer', () => {
     expect(hasComponent(world, eid, PlayerControlled)).toBe(true);
     expect(Velocity.x[eid]).toBe(0);
     expect(Velocity.y[eid]).toBe(0);
+  });
+
+  it('initializes the configured footprint and a stationary collision segment', () => {
+    const world = createGameWorld();
+    const eid = spawnPlayer(world, 40.25, 24.5);
+    expect(hasComponent(world, eid, Collider)).toBe(true);
+    expect(Collider.halfWidth[eid]).toBe(movementConfig.footprint.halfWidth);
+    expect(Collider.halfHeight[eid]).toBe(movementConfig.footprint.halfHeight);
+    expect(Transform.previousX[eid]).toBe(40.25);
+    expect(Transform.previousY[eid]).toBe(24.5);
   });
 
   it('initializes numeric transform/velocity fields so renderers never see NaN', () => {

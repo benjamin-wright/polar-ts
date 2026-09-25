@@ -107,15 +107,25 @@ the whole proposed movement segment against impassable terrain and world bounds.
 Resolve after integration, stopping at the last safe position before first
 contact. The tile grid describes terrain; it does not quantize movement.
 
-- [ ] The footprint cannot enter water, solid tiles, or leave the map, including
+- [x] The footprint cannot enter water, solid tiles, or leave the map, including
       during diagonal movement or a step that crosses multiple tiles. Positions
       remain continuous at contact, with no snapping to tile centres.
-- [ ] Holding toward a barrier stops translation without sliding, jitter, or
+- [x] Holding toward a barrier stops translation without sliding, jitter, or
       accumulating motion. The hold stays active: dragging toward a clear
       direction moves away immediately, without a release/repress cycle.
-- [ ] Unit tests cover first contact, shorelines, map bounds, obstacle corners,
+- [x] Unit tests cover first contact, shorelines, map bounds, obstacle corners,
       narrow gaps, large steps, and steering away while blocked. Aiming beyond
       an obstacle approaches it and stops; no detour is generated.
+
+Verified on 2026-09-25: 100 unit tests pass, including 16 pure collision tests,
+three controller/integration/collision tests, and a footprint initialization
+check. Lint, formatting, and the typechecked production build pass with the
+`.nvmrc` Node version. Browser checks via `npm run dev` covered repeated holds
+against a rock, steering away during a drag, and shoreline contact after resizing
+to 390 × 844, with no console warnings/errors. The collision system publishes
+resolved velocity for the later animation task. Demo steps and footprint tuning
+are documented in the [map notes](../assets/tilemaps/README.md).
+Real-phone and deployed-build validation remain outstanding under 1.7/1.8.
 
 ## 1.4 — Follow the player with the camera
 

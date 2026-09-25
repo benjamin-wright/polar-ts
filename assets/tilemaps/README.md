@@ -33,7 +33,10 @@ The loader in `src/game/world/tilemap.ts` validates this contract and produces
 world bounds, ordered tile layers, spawn coordinates, and a combined row-major
 walkability grid. A cell is walkable only when its terrain and any obstacle are
 both walkable. Invalid exports fail with the offending field in the error.
-The grid is ready for the collision subtask; this slice does not enforce it yet.
+The collision system sweeps the player's whole footprint against this grid after
+movement integration, stopping at first contact without sliding or pathfinding.
+The full footprint must fit at the spawn; the game rejects a spawn too close to
+blocked ground even if its centre tile is walkable.
 
 Maps and atlas images are imported through Vite asset URLs, so the build emits
 and hashes both files. If an atlas filename changes, update its import and the
@@ -48,18 +51,27 @@ when necessary, with the blue placeholder player at the spawn. Hold a finger or
 the primary mouse button inside the island to move straight toward it, drag to
 steer, and release to stop. Leaving the island's rectangular viewport or losing
 focus clears the hold; press again to resume. Presses in the surrounding margin
-are ignored. Travel still passes through water and rocks: collision arrives in
-1.3, followed by the camera in 1.4.
+are ignored. Water, rocks, and map boundaries stop movement. The camera still fits
+the whole map until the follow-camera task in 1.4.
 
 `assets/data/player-movement.json` configures `walkSpeed` in world pixels per
 second and `deadZone` as a radius in world pixels. Reaching the aim point or its
 dead zone stops movement while keeping the hold active, so dragging away resumes
 travel without another press. Only the first primary pointer controls movement.
+`footprint.halfWidth` and `footprint.halfHeight` configure a centred, axis-aligned
+ground footprint (currently 24 × 24 pixels). Touching a tile edge is allowed;
+overlapping blocked ground is not. Collision checks the entire movement segment,
+so even a large step cannot cross a rock or a strip of water. Both movement axes
+stop together; steering away resumes travel immediately without clearing the hold.
 
 For review, check the ice shore, rocks over snow, player above the terrain, and
-accurate movement after resizing. Hold at different angles, drag to change
-direction, release, and drag into the surrounding margin to check cancellation.
-`npm test` validates map exports, steering, pointer cancellation, and player-only
-control; `npm run build` produces the static assets for subpath smoke testing.
+accurate movement after resizing. From spawn, hold to the right beyond the rocks:
+the player approaches the first rock and stops. Keep holding, then drag diagonally
+back toward open snow to move away. Head north toward the water and check that the
+footprint stops at the ice edge. Release to stop, and drag into the surrounding
+margin to check cancellation. Repeat after resizing.
+`npm test` validates map exports, steering, pointer cancellation, player-only
+control, and swept collision (corners, narrow gaps, large steps, and blocked holds).
+`npm run build` produces the static assets for subpath smoke testing.
 
 Format reference: [Tiled JSON map format](https://doc.mapeditor.org/en/stable/reference/json-map-format/).

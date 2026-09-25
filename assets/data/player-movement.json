@@ -1,4 +1,8 @@
 {
   "walkSpeed": 200,
-  "deadZone": 6
+  "deadZone": 6,
+  "footprint": {
+    "halfWidth": 12,
+    "halfHeight": 12
+  }
 }

@@ -1,5 +1,13 @@
 import { addComponent, addEntity } from 'bitecs';
-import { Health, PlayerControlled, Sprite, Transform, Velocity } from '../../ecs/components';
+import movementConfig from '../../../assets/data/player-movement.json';
+import {
+  Collider,
+  Health,
+  PlayerControlled,
+  Sprite,
+  Transform,
+  Velocity,
+} from '../../ecs/components';
 import type { World } from '../../ecs/world';
 
 /** Creates a stationary, explicitly player-controlled entity. */
@@ -10,8 +18,13 @@ export function spawnPlayer(world: World, x: number, y: number): number {
   addComponent(world, eid, Sprite);
   addComponent(world, eid, Health);
   addComponent(world, eid, PlayerControlled);
+  addComponent(world, eid, Collider);
   Transform.x[eid] = x;
   Transform.y[eid] = y;
+  Transform.previousX[eid] = x;
+  Transform.previousY[eid] = y;
+  Collider.halfWidth[eid] = movementConfig.footprint.halfWidth;
+  Collider.halfHeight[eid] = movementConfig.footprint.halfHeight;
   // bitecs array stores are uninitialized (undefined) until written — writing
   // undefined into Pixi's rotation yields NaN and a zero-size sprite, so every
   // numeric field must get an explicit default here.
