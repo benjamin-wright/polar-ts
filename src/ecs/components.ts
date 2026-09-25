@@ -37,10 +37,5 @@ export const Inventory = {
   goods: [] as Map<string, number>[],
 };
 
-/** Tap-to-walk destination, world coordinates. */
-export const MoveTarget = {
-  x: [] as number[],
-  y: [] as number[],
-  /** Movement speed in world units per second. */
-  speed: [] as number[],
-};
+/** Marker for the entity controlled by player input. */
+export const PlayerControlled = {};

@@ -1,68 +1,49 @@
-import { addComponent, addEntity, hasComponent } from 'bitecs';
+import { addComponent, addEntity } from 'bitecs';
 import { describe, expect, it } from 'vitest';
-import { MoveTarget, Transform } from '../components';
+import { Transform, Velocity } from '../components';
 import { createGameWorld } from '../world';
 import { movementSystem } from './movement';
 
-function spawnMover(world: ReturnType<typeof createGameWorld>, x: number, y: number, speed = 100) {
+function setup() {
+  const world = createGameWorld();
   const eid = addEntity(world);
   addComponent(world, eid, Transform);
-  addComponent(world, eid, MoveTarget);
-  Transform.x[eid] = x;
-  Transform.y[eid] = y;
-  MoveTarget.x[eid] = x;
-  MoveTarget.y[eid] = y;
-  MoveTarget.speed[eid] = speed;
-  return eid;
+  addComponent(world, eid, Velocity);
+  Transform.x[eid] = 10.25;
+  Transform.y[eid] = 20.5;
+  Velocity.x[eid] = 30;
+  Velocity.y[eid] = -40;
+  return { world, eid };
 }
 
 describe('movementSystem', () => {
-  it('moves the entity toward its target proportionally to dt', () => {
-    const world = createGameWorld();
-    const eid = spawnMover(world, 0, 0);
-    MoveTarget.x[eid] = 100;
-    MoveTarget.y[eid] = 0;
-
-    movementSystem(world, 0.5);
-
-    expect(Transform.x[eid]).toBeCloseTo(50);
-    expect(Transform.y[eid]).toBeCloseTo(0);
-    expect(hasComponent(world, eid, MoveTarget)).toBe(true);
+  it('integrates signed velocity without rounding world coordinates', () => {
+    const { world, eid } = setup();
+    movementSystem(world, 0.25);
+    expect(Transform.x[eid]).toBe(17.75);
+    expect(Transform.y[eid]).toBe(10.5);
   });
 
-  it('moves diagonally at constant speed', () => {
-    const world = createGameWorld();
-    const eid = spawnMover(world, 0, 0, 50);
-    MoveTarget.x[eid] = 30;
-    MoveTarget.y[eid] = 40; // distance 50
-
-    movementSystem(world, 0.5); // step 25 = half way
-
-    expect(Transform.x[eid]).toBeCloseTo(15);
-    expect(Transform.y[eid]).toBeCloseTo(20);
+  it('produces the same displacement across fixed-step partitions', () => {
+    const first = setup();
+    movementSystem(first.world, 1);
+    const expected = { x: Transform.x[first.eid], y: Transform.y[first.eid] };
+    const second = setup();
+    for (let i = 0; i < 60; i++) movementSystem(second.world, 1 / 60);
+    expect(Transform.x[second.eid]).toBeCloseTo(expected.x);
+    expect(Transform.y[second.eid]).toBeCloseTo(expected.y);
   });
 
-  it('snaps to the target and removes MoveTarget on arrival', () => {
-    const world = createGameWorld();
-    const eid = spawnMover(world, 0, 0);
-    MoveTarget.x[eid] = 10;
-    MoveTarget.y[eid] = 0;
-
-    movementSystem(world, 1); // step 100 > distance 10
-
-    expect(Transform.x[eid]).toBe(10);
-    expect(Transform.y[eid]).toBe(0);
-    expect(hasComponent(world, eid, MoveTarget)).toBe(false);
-  });
-
-  it('treats a zero-distance target as arrived', () => {
-    const world = createGameWorld();
-    const eid = spawnMover(world, 5, 5);
-    MoveTarget.x[eid] = 5;
-    MoveTarget.y[eid] = 5;
-
-    movementSystem(world, 1 / 60);
-
-    expect(hasComponent(world, eid, MoveTarget)).toBe(false);
+  it('does not move stationary entities or transforms without velocity', () => {
+    const { world, eid } = setup();
+    Velocity.x[eid] = 0;
+    Velocity.y[eid] = 0;
+    const scenery = addEntity(world);
+    addComponent(world, scenery, Transform);
+    Transform.x[scenery] = 8;
+    Transform.y[scenery] = 12;
+    movementSystem(world, 1);
+    expect([Transform.x[eid], Transform.y[eid]]).toEqual([10.25, 20.5]);
+    expect([Transform.x[scenery], Transform.y[scenery]]).toEqual([8, 12]);
   });
 });

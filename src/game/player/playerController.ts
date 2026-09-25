@@ -1,17 +1,26 @@
-import { addComponent, query } from 'bitecs';
-import { MoveTarget, Transform } from '../../ecs/components';
+import { query } from 'bitecs';
+import movementConfig from '../../../assets/data/player-movement.json';
+import { PlayerControlled, Transform, Velocity } from '../../ecs/components';
 import type { World } from '../../ecs/world';
+import { walkVelocity } from './steering';
 
 /**
- * Phase 0 tap-to-walk controller: a pending tap in world coordinates becomes
- * a MoveTarget on each entity with a Transform. Phase 1 replaces this with
- * player-only hold-to-move steering and continuous collision; see docs/phase-1.md.
+ * Recompute player intent from the current hold before each integration step.
+ * A null aim stops movement; other entities retain their own velocity.
  */
-export function playerControllerSystem(world: World, tap: { x: number; y: number } | null): void {
-  if (!tap) return;
-  for (const eid of query(world, [Transform])) {
-    addComponent(world, eid, MoveTarget);
-    MoveTarget.x[eid] = tap.x;
-    MoveTarget.y[eid] = tap.y;
+export function playerControllerSystem(
+  world: World,
+  aim: { x: number; y: number } | null,
+  dt: number,
+): void {
+  for (const eid of query(world, [PlayerControlled, Transform, Velocity])) {
+    const velocity = walkVelocity(
+      { x: Transform.x[eid], y: Transform.y[eid] },
+      aim,
+      dt,
+      movementConfig,
+    );
+    Velocity.x[eid] = velocity.x;
+    Velocity.y[eid] = velocity.y;
   }
 }

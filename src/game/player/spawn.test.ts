@@ -1,8 +1,8 @@
 import { hasComponent } from 'bitecs';
 import { describe, expect, it } from 'vitest';
-import { Health, MoveTarget, Sprite, Transform, Velocity } from '../../ecs/components';
+import { Health, PlayerControlled, Sprite, Transform, Velocity } from '../../ecs/components';
 import { createGameWorld } from '../../ecs/world';
-import { PLAYER_WALK_SPEED, spawnPlayer } from './spawn';
+import { spawnPlayer } from './spawn';
 
 describe('spawnPlayer', () => {
   it('creates an entity at the given position with player sprite', () => {
@@ -16,14 +16,13 @@ describe('spawnPlayer', () => {
     expect(Health.current[eid]).toBe(Health.max[eid]);
   });
 
-  it('initializes a stationary MoveTarget with the walk-speed default', () => {
+  it('marks the player for input and starts stationary', () => {
     const world = createGameWorld();
     const eid = spawnPlayer(world, 40, 24);
 
-    expect(hasComponent(world, eid, MoveTarget)).toBe(true);
-    expect(MoveTarget.x[eid]).toBe(40);
-    expect(MoveTarget.y[eid]).toBe(24);
-    expect(MoveTarget.speed[eid]).toBe(PLAYER_WALK_SPEED);
+    expect(hasComponent(world, eid, PlayerControlled)).toBe(true);
+    expect(Velocity.x[eid]).toBe(0);
+    expect(Velocity.y[eid]).toBe(0);
   });
 
   it('initializes numeric transform/velocity fields so renderers never see NaN', () => {

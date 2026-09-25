@@ -7,9 +7,9 @@ must also support inspecting those animations.
 See [the roadmap](./plan.md) and [architecture](./architecture.md).
 
 The starting point is the Phase 0 sprite, straight-line movement, pointer input,
-fixed-step loop, and ECS/render separation. The tasks below are planned work,
-not completed features. Each task is intended to be a separate reviewable change
-with a deployable result.
+fixed-step loop, and ECS/render separation. Checklists below record completed
+acceptance checks; unchecked items remain planned work. Each task is intended to
+be a separate reviewable change with a deployable result.
 
 ## Scope and shared decisions
 
@@ -28,8 +28,8 @@ with a deployable result.
 - Recompute aim from the held screen position and current camera transform on
   each simulation step. Holding a stationary finger ahead keeps the player
   moving as the camera pans. A dead zone prevents jitter near the player.
-- Identify the controlled player explicitly. The current controller targets
-  every entity with a transform; adding map entities must not make them move.
+- Identify the controlled player with `PlayerControlled`; its controller must
+  leave other entities' movement intent unchanged.
 - Preserve the fixed system order: input and player control before movement
   integration, collision after integration, then camera and render sync. Add new
   systems as separate files. Animation reads resolved movement before render sync.
@@ -47,17 +47,23 @@ Add a small Tiled map and tileset, a typed map loader under `game/world/`, and a
 tile renderer under `render/`. Define tile size, layer order, walkability, spawn,
 and world bounds in the content contract. Wire loading into the game entry.
 
-- [ ] Terrain and obstacles render in the correct positions and layer order;
+- [x] Terrain and obstacles render in the correct positions and layer order;
       the player starts on a valid land tile.
-- [ ] The loader produces map dimensions, a walkability grid, and spawn data
+- [x] The loader produces map dimensions, a walkability grid, and spawn data
       without importing Pixi. Invalid dimensions, tile references, and spawn
       data fail with useful errors, covered by focused unit tests.
-- [ ] Map and image assets load from a production build under both `/polar/`
+- [x] Map and image assets load from a production build under both `/polar/`
       and `/polar-qa/`; the supported Tiled export format is documented.
 
-This intermediate demo still uses straight-line movement. Collision arrives in
-1.3, after hold-to-move controls in 1.2; no generic world editor or complete
-Tiled feature set is required.
+Verified on 2026-09-25: 48 unit tests pass (32 for map loading), plus lint,
+formatting, typechecking, and the production build. The built game rendered in
+the browser under both subpaths without console warnings/errors. A 390 × 844
+viewport check confirmed island fitting and accurate tap movement after resizing.
+See [the map contract and preview instructions](../assets/tilemaps/README.md).
+
+At delivery, this intermediate demo still used straight-line tap movement.
+Hold-to-move controls follow in 1.2 and collision in 1.3; no generic world editor
+or complete Tiled feature set is required.
 
 ## 1.2 — Deliver continuous hold-to-move controls
 
@@ -70,15 +76,26 @@ intent for the fixed-step integration. Configure walking speed and the dead zone
 in JSON under `assets/data/`. Keep direction/speed calculations pure and the
 pointer-to-world adapter in `render/`, ready for the camera in 1.4.
 
-- [ ] Movement supports arbitrary headings and positions, including distances
+- [x] Movement supports arbitrary headings and positions, including distances
       smaller than a tile, at equal speed in all directions. Clamp travel to
       the aim point and stop within the dead zone without oscillating.
-- [ ] Release, cancellation, lost pointer capture, window blur, or leaving
+- [x] Release, cancellation, lost pointer capture, window blur, or leaving
       the playable viewport clears movement until a new press. Additional
       fingers cannot take over the active pointer or leave movement stuck on.
-- [ ] Tests cover continuous direction/speed, zero-distance aim, overshoot,
+- [x] Tests cover continuous direction/speed, zero-distance aim, overshoot,
       drag steering, release/cancellation, and a second non-player entity.
       Holding toward impassable ground is allowed; collision in 1.3 stops travel.
+
+Verified on 2026-09-25: 80 unit tests pass, including 19 input-lifecycle tests,
+11 pure steering tests, and three player-controller integration tests. Lint,
+formatting, typechecking, and the production build pass. Browser checks of the
+built game at `/polar-qa/` covered mouse press/drag/release, dragging beyond the
+playable area, ignored presses in the margin, and steering after resizing to
+390 × 844, without console warnings/errors. Multi-pointer ownership and focus,
+capture, and visibility cancellation are covered by automated tests; real-phone
+touch checks remain in 1.7 and 1.8. See the
+[preview instructions](../assets/tilemaps/README.md) and
+[movement tuning](../assets/data/player-movement.json).
 
 ## 1.3 — Stop at shorelines and obstacles
 

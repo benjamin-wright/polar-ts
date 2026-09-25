@@ -16,6 +16,14 @@ npm ci
 npm run dev        # dev server (game at /, dev previewer at /dev/)
 ```
 
+The current demo renders the first island with a placeholder player. Hold a
+finger or the primary mouse button inside the island to move toward it, drag
+to steer, and release to stop. Walking speed and the near-player dead zone are
+configured in `assets/data/player-movement.json`. Collision and the following
+camera arrive in the next Phase 1 tasks. See the
+[map format and preview notes](assets/tilemaps/README.md) to edit the island or
+review this slice.
+
 ## Scripts
 
 | Command                | Purpose                             |
