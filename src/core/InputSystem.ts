@@ -1,96 +1,110 @@
-/**
- * Unified pointer input layer (Pointer Events cover touch, mouse and pen).
- *
- * Listeners are attached to a target element (typically the Pixi canvas);
- * consumers poll `pointer` each frame. `consumeTap()` hands out a tap exactly
- * once, so a single tap can never trigger two actions.
- *
- * Game logic reads this via the shared `InputState` component (see
- * ecs/components) and never touches DOM events directly.
- */
-export interface PointerState {
-  /** Canvas-space coordinates of the latest pointer event. */
+export interface PointerPosition {
   x: number;
   y: number;
-  /** True while a pointer is held down. */
-  down: boolean;
-  /** True on the frame the pointer went down. */
-  justPressed: boolean;
-  /** Tap (press + quick release without dragging) awaiting consumption. */
-  tap: { x: number; y: number } | null;
 }
 
-const MAX_TAP_DURATION_MS = 300;
-const MAX_TAP_TRAVEL_PX = 12;
-
+/** One captured pointer owns the hold; game logic receives canvas CSS coordinates. */
 export class InputSystem {
-  readonly pointer: PointerState = { x: 0, y: 0, down: false, justPressed: false, tap: null };
+  private activePointerId: number | null = null;
+  private clientX = 0;
+  private clientY = 0;
+  private readonly document: Document;
+  private readonly view: Window | null;
 
-  private pressTime = 0;
-  private pressX = 0;
-  private pressY = 0;
-
-  constructor(private readonly target: HTMLElement) {
+  constructor(
+    private readonly target: HTMLElement,
+    private readonly isPlayable: (point: PointerPosition) => boolean = () => true,
+  ) {
+    this.document = target.ownerDocument;
+    this.view = this.document.defaultView;
     target.addEventListener('pointerdown', this.onPointerDown);
     target.addEventListener('pointermove', this.onPointerMove);
-    target.addEventListener('pointerup', this.onPointerUp);
-    target.addEventListener('pointercancel', this.onPointerCancel);
+    target.addEventListener('pointerup', this.onPointerEnd);
+    target.addEventListener('pointercancel', this.onPointerEnd);
+    target.addEventListener('lostpointercapture', this.onPointerEnd);
+    target.addEventListener('pointerleave', this.onPointerEnd);
+    this.view?.addEventListener('blur', this.cancelHold);
+    this.view?.addEventListener('pagehide', this.cancelHold);
+    this.view?.addEventListener('resize', this.cancelHold);
+    this.document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
-  /** Returns the pending tap once, clearing it. */
-  consumeTap(): { x: number; y: number } | null {
-    const tap = this.pointer.tap;
-    this.pointer.tap = null;
-    return tap;
-  }
-
-  /** Clears per-frame flags. Call once at the end of every frame. */
-  endFrame(): void {
-    this.pointer.justPressed = false;
-  }
-
-  destroy(): void {
-    this.target.removeEventListener('pointerdown', this.onPointerDown);
-    this.target.removeEventListener('pointermove', this.onPointerMove);
-    this.target.removeEventListener('pointerup', this.onPointerUp);
-    this.target.removeEventListener('pointercancel', this.onPointerCancel);
-  }
-
-  private position(event: PointerEvent): { x: number; y: number } {
+  /** Poll each simulation step, even when no new pointer event has arrived. */
+  heldPoint(): PointerPosition | null {
+    if (this.activePointerId === null) return null;
     const rect = this.target.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const point = { x: this.clientX - rect.left, y: this.clientY - rect.top };
+    if (
+      !Number.isFinite(point.x) ||
+      !Number.isFinite(point.y) ||
+      point.x < 0 ||
+      point.y < 0 ||
+      point.x >= rect.width ||
+      point.y >= rect.height ||
+      !this.isPlayable(point)
+    ) {
+      this.cancelHold();
+      return null;
+    }
+    return point;
   }
 
-  private onPointerDown = (event: PointerEvent): void => {
-    const { x, y } = this.position(event);
-    this.pointer.x = x;
-    this.pointer.y = y;
-    this.pointer.down = true;
-    this.pointer.justPressed = true;
-    this.pressTime = performance.now();
-    this.pressX = x;
-    this.pressY = y;
-  };
-
-  private onPointerMove = (event: PointerEvent): void => {
-    const { x, y } = this.position(event);
-    this.pointer.x = x;
-    this.pointer.y = y;
-  };
-
-  private onPointerUp = (event: PointerEvent): void => {
-    const { x, y } = this.position(event);
-    this.pointer.x = x;
-    this.pointer.y = y;
-    this.pointer.down = false;
-    const quick = performance.now() - this.pressTime <= MAX_TAP_DURATION_MS;
-    const still = Math.hypot(x - this.pressX, y - this.pressY) <= MAX_TAP_TRAVEL_PX;
-    if (quick && still) {
-      this.pointer.tap = { x, y };
+  /** Cancellation is latched: moving back inside cannot restart an old hold. */
+  cancelHold = (): void => {
+    const id = this.activePointerId;
+    this.activePointerId = null;
+    if (id !== null && this.target.hasPointerCapture(id)) {
+      this.target.releasePointerCapture(id);
     }
   };
 
-  private onPointerCancel = (): void => {
-    this.pointer.down = false;
+  destroy(): void {
+    this.cancelHold();
+    this.target.removeEventListener('pointerdown', this.onPointerDown);
+    this.target.removeEventListener('pointermove', this.onPointerMove);
+    this.target.removeEventListener('pointerup', this.onPointerEnd);
+    this.target.removeEventListener('pointercancel', this.onPointerEnd);
+    this.target.removeEventListener('lostpointercapture', this.onPointerEnd);
+    this.target.removeEventListener('pointerleave', this.onPointerEnd);
+    this.view?.removeEventListener('blur', this.cancelHold);
+    this.view?.removeEventListener('pagehide', this.cancelHold);
+    this.view?.removeEventListener('resize', this.cancelHold);
+    this.document.removeEventListener('visibilitychange', this.onVisibilityChange);
+  }
+
+  private onPointerDown = (event: PointerEvent): void => {
+    if (this.activePointerId !== null || !event.isPrimary || event.button !== 0) return;
+    this.activePointerId = event.pointerId;
+    this.clientX = event.clientX;
+    this.clientY = event.clientY;
+    if (!this.heldPoint()) return;
+    try {
+      this.target.setPointerCapture(event.pointerId);
+    } catch {
+      // A detached surface or an ended pointer must not leave movement active.
+      this.cancelHold();
+      return;
+    }
+    event.preventDefault();
+  };
+
+  private onPointerMove = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointerId) return;
+    // Also covers releasing the primary button while another mouse button stays down.
+    if ((event.buttons & 1) === 0) {
+      this.cancelHold();
+      return;
+    }
+    this.clientX = event.clientX;
+    this.clientY = event.clientY;
+    this.heldPoint(); // Cancel immediately on crossing the playable boundary.
+  };
+
+  private onPointerEnd = (event: PointerEvent): void => {
+    if (event.pointerId === this.activePointerId) this.cancelHold();
+  };
+
+  private onVisibilityChange = (): void => {
+    if (this.document.hidden) this.cancelHold();
   };
 }

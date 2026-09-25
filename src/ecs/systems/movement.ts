@@ -1,25 +1,11 @@
-import { query, removeComponent } from 'bitecs';
-import { MoveTarget, Transform } from '../components';
+import { query } from 'bitecs';
+import { Transform, Velocity } from '../components';
 import type { World } from '../world';
 
-/**
- * Moves entities with a MoveTarget toward it at their speed, removing the
- * target component on arrival. Pure simulation — no rendering.
- */
+/** Integrate world-space velocity; controllers determine intent before this step. */
 export function movementSystem(world: World, dt: number): void {
-  for (const eid of query(world, [Transform, MoveTarget])) {
-    const dx = MoveTarget.x[eid] - Transform.x[eid];
-    const dy = MoveTarget.y[eid] - Transform.y[eid];
-    const dist = Math.hypot(dx, dy);
-    const step = MoveTarget.speed[eid] * dt;
-
-    if (dist <= step || dist === 0) {
-      Transform.x[eid] = MoveTarget.x[eid];
-      Transform.y[eid] = MoveTarget.y[eid];
-      removeComponent(world, eid, MoveTarget);
-    } else {
-      Transform.x[eid] += (dx / dist) * step;
-      Transform.y[eid] += (dy / dist) * step;
-    }
+  for (const eid of query(world, [Transform, Velocity])) {
+    Transform.x[eid] += Velocity.x[eid] * dt;
+    Transform.y[eid] += Velocity.y[eid] * dt;
   }
 }

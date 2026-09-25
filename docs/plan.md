@@ -14,11 +14,17 @@ _Deliverable: empty but deployed app._
 
 ## Phase 1 — Walking demo (smallest executable game)
 
-Tiled island map, tile rendering + collision, player sprite with idle/walk
-animation, tap-to-walk with A*, follow camera, mobile viewport. Includes dev
-previewer panel #1 (animation preview) since asset iteration starts here.
+Tiled island map, tile rendering + continuous collision, player sprite with
+idle/walk animation, hold-to-move steering toward the touch point, a panning
+follow camera, and mobile viewport. Movement stops at obstacles and impassable
+ground; the player steers around them manually. Includes dev previewer panel #1
+(animation preview) since asset iteration starts here.
 
 _Deliverable: walk around an island on your phone._
+
+See [Phase 1 deliverable tasks](./phase-1.md) for the implementation sequence,
+dependencies, and acceptance criteria. Each task should be a separate reviewable
+change that keeps the static build deployable.
 
 ## Phase 2 — Sailing
 
