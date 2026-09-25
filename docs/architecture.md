@@ -10,7 +10,8 @@ animations, and sailing physics tuning.
 
 Key game features:
 
-- **Exploration**: top-down tile-based world, tap-to-walk navigation.
+- **Exploration**: top-down tile-based world with continuous, hold-to-move
+  controls and a camera that pans to follow the player.
 - **Resource gathering**: harvestable resource nodes feeding the economy.
 - **Supply-and-demand economy**: per-port stock and dynamic prices.
 - **Dialogue**: popup dialogs with character portraits.
@@ -20,21 +21,21 @@ Key game features:
 
 ## 2. Technology Decisions
 
-| Concern                   | Choice                                                                       | Rationale / alternatives considered                                                                                                                                                                                                                          |
-| ------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Language                  | TypeScript (strict)                                                          | Type safety pays off for ECS component schemas and data-driven content                                                                                                                                                                                       |
-| Build/dev server          | Vite                                                                         | Instant HMR, outputs pure static files that can be served by any static host                                                                                                                                                                                 |
-| Renderer                  | PixiJS v8 (WebGL, Canvas fallback)                                           | Battle-tested 2D sprite renderer with batching, filters, texture atlases. **Alternative: Phaser** — rejected; it is a monolith whose scene/physics model fights a custom ECS and a custom sailing simulation. We only need rendering, not its arcade physics |
-| ECS                       | bitecs                                                                       | Minimal, fast, structure-of-arrays ECS that stays out of the way. Alternatives: miniplex (more ergonomic, slower) or a small hand-rolled ECS — noted as fallbacks                                                                                            |
-| Physics                   | Custom kinematic model (pure functions, no library)                          | The sailing model is the game's differentiator; planck.js/matter.js rigid-body physics would not model sail/keel/rudder force balance any better than ~100 lines of testable math                                                                            |
-| Tile maps                 | Tiled editor → JSON export, thin custom render layer over Pixi               | Industry-standard editor; our maps are simple enough that pixi-tilemap (unmaintained) isn't needed                                                                                                                                                           |
-| Pathfinding (tap-to-walk) | Small A* over the tile grid (hand-rolled or `pathfinding` npm lib)           | Grid is already in memory for collision                                                                                                                                                                                                                      |
-| Audio (later phase)       | Howler                                                                       | De-facto standard, tiny                                                                                                                                                                                                                                      |
-| Dialogue content          | Data-driven JSON now; Yarn Spinner evaluated later if branching gets complex | Keeps writing decoupled from code                                                                                                                                                                                                                            |
-| Dev previewer UI          | Tweakpane for parameter panels + plain DOM                                   | Zero-framework controls for sliders/toggles; no React needed                                                                                                                                                                                                 |
-| Unit tests                | Vitest                                                                       | Sailing model and economy are pure functions — highly testable headlessly                                                                                                                                                                                    |
-| Lint/format               | ESLint + Prettier                                                            | Standard                                                                                                                                                                                                                                                     |
-| Hosting/CI                | GitHub Actions → build → deploy `dist/` via rsync over SSH                   | Static hosting with separate production and QA directories; the pipeline runs lint, formatting checks, tests, and a typechecked build before publishing                                                                                                      |
+| Concern             | Choice                                                                       | Rationale / alternatives considered                                                                                                                                                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Language            | TypeScript (strict)                                                          | Type safety pays off for ECS component schemas and data-driven content                                                                                                                                                                                       |
+| Build/dev server    | Vite                                                                         | Instant HMR, outputs pure static files that can be served by any static host                                                                                                                                                                                 |
+| Renderer            | PixiJS v8 (WebGL, Canvas fallback)                                           | Battle-tested 2D sprite renderer with batching, filters, texture atlases. **Alternative: Phaser** — rejected; it is a monolith whose scene/physics model fights a custom ECS and a custom sailing simulation. We only need rendering, not its arcade physics |
+| ECS                 | bitecs                                                                       | Minimal, fast, structure-of-arrays ECS that stays out of the way. Alternatives: miniplex (more ergonomic, slower) or a small hand-rolled ECS — noted as fallbacks                                                                                            |
+| Physics             | Custom kinematic model (pure functions, no library)                          | The sailing model is the game's differentiator; planck.js/matter.js rigid-body physics would not model sail/keel/rudder force balance any better than ~100 lines of testable math                                                                            |
+| Tile maps           | Tiled editor → JSON export, thin custom render layer over Pixi               | Industry-standard editor; our maps are simple enough that pixi-tilemap (unmaintained) isn't needed                                                                                                                                                           |
+| Land movement       | Continuous hold-to-move steering with straight-line collision checks         | World-space positions and headings are independent of tile resolution; terrain tiles describe impassable ground, while collision stops movement at obstacles                                                                                                 |
+| Audio (later phase) | Howler                                                                       | De-facto standard, tiny                                                                                                                                                                                                                                      |
+| Dialogue content    | Data-driven JSON now; Yarn Spinner evaluated later if branching gets complex | Keeps writing decoupled from code                                                                                                                                                                                                                            |
+| Dev previewer UI    | Tweakpane for parameter panels + plain DOM                                   | Zero-framework controls for sliders/toggles; no React needed                                                                                                                                                                                                 |
+| Unit tests          | Vitest                                                                       | Sailing model and economy are pure functions — highly testable headlessly                                                                                                                                                                                    |
+| Lint/format         | ESLint + Prettier                                                            | Standard                                                                                                                                                                                                                                                     |
+| Hosting/CI          | GitHub Actions → build → deploy `dist/` via rsync over SSH                   | Static hosting with separate production and QA directories; the pipeline runs lint, formatting checks, tests, and a typechecked build before publishing                                                                                                      |
 
 Pushes to `main` publish to the SSH host's `polar/` directory (served at
 `/polar/`); pull requests targeting `main` publish to the shared `polar-qa/`
@@ -72,7 +73,7 @@ src/
   ecs/         world setup, shared components (Transform, Velocity, Sprite, Health, Inventory...)
   game/
     world/     tilemap loading, collision grid, chunking, wind/current vector fields
-    player/    tap-to-walk controller, swimming, embark/disembark
+    player/    hold-to-move controller, swimming, embark/disembark
     sailing/   windfield, sail model, hull model, rudder, jibe detection, damage
     economy/   goods, markets, price engine, stock simulation
     dialogue/  dialogue runner, portrait metadata
@@ -135,8 +136,30 @@ imposes no constraint here.
 
 ### 3.7 Input & mobile
 
-- Unified pointer layer (Pointer Events) → semantic actions.
-- Land: tap → world coordinate → A* → waypoint-following component.
+- Unified pointer layer (Pointer Events) → semantic actions. One active pointer
+  owns movement until released or cancelled; holding the mouse button gives
+  desktop players the same controls as touch.
+- Land: hold a point in the playable viewport to move directly toward it.
+  Dragging the held pointer changes direction immediately. Move at a fixed
+  walking speed in any direction, using continuous world coordinates; diagonal
+  movement is no faster than axial movement. A small dead zone around the player
+  prevents jitter, and movement never overshoots the current aim point. Walking
+  speed and dead-zone size are data-driven tuning values.
+- The camera pans with the player. Recompute the aim from the held screen
+  position and current camera transform each simulation step, even when the
+  pointer has not moved. Holding ahead therefore continues steering ahead as
+  the world scrolls, rather than retaining the initial world destination.
+- Release, cancellation, lost pointer capture, window blur, or leaving the
+  playable viewport stops movement and clears the hold. A new press starts it
+  again. Reaching the aim point or its dead zone stops translation while the
+  hold remains active; dragging away resumes movement.
+- Terrain tiles supply collision data without snapping the player's position
+  or heading to a grid. Check the player's continuous footprint along each
+  movement step and stop at the first obstacle, shoreline, or world boundary.
+  Aiming at impassable ground still moves toward it until collision. There is
+  no automatic obstacle avoidance, sliding, or path planner; the player steers
+  around obstacles manually. While blocked, the hold remains active so steering
+  into a clear direction resumes movement without lifting the finger.
 - Sailing: on-screen cluster — rudder ◀ ▶ buttons and sheet in/out buttons (or
   slider), sized for thumbs, respecting safe-area insets.
 - Viewport: fixed logical resolution scaled to fit, `devicePixelRatio`-aware, PWA

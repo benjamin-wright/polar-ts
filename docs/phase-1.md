@@ -1,8 +1,9 @@
 # Phase 1 — Walking demo tasks
 
 Phase 1 is complete when a player can explore one small island on a phone:
-tap to navigate around obstacles, see the character animate, and have the camera
-follow. The developer previewer must also support inspecting those animations.
+hold to move toward the touch point, steer around obstacles manually, see the
+character animate, and have the camera pan to follow. The developer previewer
+must also support inspecting those animations.
 See [the roadmap](./plan.md) and [architecture](./architecture.md).
 
 The starting point is the Phase 0 sprite, straight-line movement, pointer input,
@@ -18,15 +19,21 @@ with a deployable result.
 - Keep map exports in `assets/tilemaps/`, sprite assets in `assets/sprites/`, and
   gameplay/animation configuration in JSON under `assets/data/`. Placeholder
   art is sufficient; final art direction does not block this phase.
-- Share one walkability grid between collision and pathfinding. Start with
-  four-neighbour movement and tile-centre destinations to avoid diagonal corner
-  cutting. Water, solid obstacles, and out-of-map positions are blocked.
+- Use continuous world-space positions and movement in any direction, with no
+  tile-centre snapping. Terrain tiles supply collision data for the player's
+  footprint. Water, solid obstacles, and out-of-map positions are blocked.
+- Hold a touch or mouse button to move straight toward the current pointer;
+  drag to steer and release to stop. Stop at obstacles without sliding or
+  automatic avoidance. No path planner, route queue, or waypoint system is needed.
+- Recompute aim from the held screen position and current camera transform on
+  each simulation step. Holding a stationary finger ahead keeps the player
+  moving as the camera pans. A dead zone prevents jitter near the player.
 - Identify the controlled player explicitly. The current controller targets
   every entity with a transform; adding map entities must not make them move.
-- Preserve the fixed system order: input and player/path control before movement
+- Preserve the fixed system order: input and player control before movement
   integration, collision after integration, then camera and render sync. Add new
   systems as separate files. Animation reads resolved movement before render sync.
-- Keep simulation and map/path calculations renderer-agnostic. Pixi objects and
+- Keep simulation and map/collision calculations renderer-agnostic. Pixi objects and
   screen-to-world adaptation belong in `render/`; pointer events stay in `core/`.
 - Sailing, swimming, NPCs, economy, combat, saving, PWA hardening, and large-world
   chunking remain in later phases.
@@ -49,46 +56,54 @@ and world bounds in the content contract. Wire loading into the game entry.
       and `/polar-qa/`; the supported Tiled export format is documented.
 
 This intermediate demo still uses straight-line movement. Collision arrives in
-1.2; no generic world editor or complete Tiled feature set is required.
+1.3, after hold-to-move controls in 1.2; no generic world editor or complete
+Tiled feature set is required.
 
-## 1.2 — Keep the player on walkable land
+## 1.2 — Deliver continuous hold-to-move controls
 
-**Depends on:** 1.1. **Outcome:** taps move the player across land, but the player
-stops at shorelines and obstacles.
+**Depends on:** 1.1. **Outcome:** holding a finger or mouse button moves the player
+straight toward it, dragging steers, and releasing stops.
 
-Add an explicit player marker, a small collision footprint, and a collision
-system using the shared grid. Resolve movement after integration, keeping a
-valid previous position when a move is blocked. Clear blocked movement cleanly.
+Replace the Phase 0 tap destination with active-pointer state and an explicit
+player marker. Add a player steering system that produces continuous movement
+intent for the fixed-step integration. Configure walking speed and the dead zone
+in JSON under `assets/data/`. Keep direction/speed calculations pure and the
+pointer-to-world adapter in `render/`, ready for the camera in 1.4.
 
-- [ ] The player cannot enter water, solid tiles, or leave the map, including
-      when a movement step crosses more than one tile.
-- [ ] Collision checks and future pathfinding use the same clearance rules;
-      the character does not clip through obstacle corners or narrow gaps.
-- [ ] A tap only controls the player. Tests cover boundaries, large steps,
-      blocked movement, valid movement, and a second non-player entity.
+- [ ] Movement supports arbitrary headings and positions, including distances
+      smaller than a tile, at equal speed in all directions. Clamp travel to
+      the aim point and stop within the dead zone without oscillating.
+- [ ] Release, cancellation, lost pointer capture, window blur, or leaving
+      the playable viewport clears movement until a new press. Additional
+      fingers cannot take over the active pointer or leave movement stuck on.
+- [ ] Tests cover continuous direction/speed, zero-distance aim, overshoot,
+      drag steering, release/cancellation, and a second non-player entity.
+      Holding toward impassable ground is allowed; collision in 1.3 stops travel.
 
-## 1.3 — Route taps around obstacles
+## 1.3 — Stop at shorelines and obstacles
 
-**Depends on:** 1.2. **Outcome:** tapping reachable ground makes the player walk
-around rocks and other obstructions to reach it.
+**Depends on:** 1.2. **Outcome:** the player moves freely across land and stops
+at the first obstacle or shoreline along the direction being held.
 
-Implement a pure A* function under `game/world/` and a player waypoint system.
-Reuse the existing movement integration to travel between waypoints. A valid
-new destination replaces the current route; blocked, out-of-bounds, or
-unreachable taps leave the current route unchanged. Tapping the current tile
-stops the player.
+Add a small world-space collision footprint and a collision system that checks
+the whole proposed movement segment against impassable terrain and world bounds.
+Resolve after integration, stopping at the last safe position before first
+contact. The tile grid describes terrain; it does not quantize movement.
 
-- [ ] Routes stay on the shared walkability grid, follow four-neighbour steps,
-      and terminate at the destination tile centre without overshooting.
-- [ ] Rapid retargeting replaces the route cleanly; arriving clears movement;
-      blocked movement cannot leave the controller retrying forever.
-- [ ] Unit tests cover detours, unreachable goals, invalid coordinates,
-      start-equals-goal, deterministic routing, and waypoint progression.
+- [ ] The footprint cannot enter water, solid tiles, or leave the map, including
+      during diagonal movement or a step that crosses multiple tiles. Positions
+      remain continuous at contact, with no snapping to tile centres.
+- [ ] Holding toward a barrier stops translation without sliding, jitter, or
+      accumulating motion. The hold stays active: dragging toward a clear
+      direction moves away immediately, without a release/repress cycle.
+- [ ] Unit tests cover first contact, shorelines, map bounds, obstacle corners,
+      narrow gaps, large steps, and steering away while blocked. Aiming beyond
+      an obstacle approaches it and stops; no detour is generated.
 
 ## 1.4 — Follow the player with the camera
 
 **Depends on:** 1.3. **Outcome:** the player can explore beyond the initial view,
-and taps still select the correct world tile as the camera moves.
+and the held touch point keeps steering correctly as the camera pans.
 
 Add a shared world container for terrain and entities, a follow camera in
 `render/`, and paired world/screen coordinate conversions. Keep screen overlays
@@ -96,14 +111,17 @@ outside the world transform. Initially use direct following; smoothing is option
 
 - [ ] The camera follows the player and clamps to map bounds; maps smaller
       than the viewport are centred consistently.
-- [ ] Pointer coordinates are converted to world coordinates exactly once,
-      accounting for the canvas position, camera offset, and scale.
+- [ ] The latest held screen position is converted through the current camera
+      transform each simulation step, accounting for canvas position, camera
+      offset, and scale, even when there are no new pointer-move events.
 - [ ] Coordinate conversion and camera-bound tests cover map edges, non-unit
-      scale, and small maps; browser checks confirm accurate taps after panning.
+      scale, and small maps. A stationary held pointer keeps steering while the
+      camera pans; when the camera is clamped, reaching the aim/dead zone stops
+      movement without overshoot.
 
 ## 1.5 — Animate the player character
 
-**Depends on:** 1.2; may proceed independently of 1.3–1.4.
+**Depends on:** 1.3; may proceed independently of 1.4.
 **Outcome:** a simple polar bear cub sprite idles and walks in the appropriate
 direction instead of using the Phase 0 square.
 
@@ -111,8 +129,9 @@ Add an initial sprite sheet and JSON metadata for frames, animations, playback
 rates, and facing. Keep animation state renderer-agnostic and texture handling
 in `render/`. Record asset provenance or licensing with any imported artwork.
 
-- [ ] Idle and walk animations use actual resolved movement; arrival or
-      collision returns the character to idle while preserving its facing.
+- [ ] Idle and walk animations use actual resolved movement; release, reaching
+      the aim/dead zone, or collision returns the character to idle while
+      preserving its facing.
 - [ ] Playback is driven by elapsed simulation time, with tests for frame
       progression and state transitions; walking does not restart every tick.
 - [ ] The sprite's anchor and ground position agree with its collision
@@ -143,10 +162,11 @@ Implement the planned fixed logical viewport with aspect-preserving scaling,
 device-pixel-ratio handling, and safe-area-aware layout. Reuse the camera's
 coordinate conversion rather than adding a separate mobile input path.
 
-- [ ] The world is not stretched, the player remains visible, and tap targets
-      stay accurate across viewport sizes, rotation, and high-density displays.
-- [ ] Taps outside the playable viewport are ignored; touch cancellation,
-      dragging, and additional fingers do not create stray movement commands.
+- [ ] The world is not stretched, the player remains visible, and held-pointer
+      steering stays accurate across viewport sizes and high-density displays.
+- [ ] Presses outside the playable viewport are ignored. Leaving it or rotating
+      the phone clears the hold; a new press works with the updated layout.
+      Verify deliberate drag steering and cancellation with real touch input.
 - [ ] Mouse input still works. Exercise the key input/coordinate cases with
       focused tests and a touch-capable browser check.
 
@@ -155,8 +175,9 @@ coordinate conversion rather than adding a separate mobile input path.
 **Depends on:** 1.1–1.7. **Outcome:** a tested Phase 1 build is available in QA,
 with a recorded phone walkthrough and any remaining issues identified.
 
-Use a compact island route that demonstrates open ground, a shoreline, an
-obstacle detour, an unreachable destination, and camera movement. Fix issues
+Use a compact island walkthrough that demonstrates free movement across open
+ground, stopping at a shoreline, manually steering around an obstacle, holding
+toward blocked ground, and following-camera movement. Fix issues
 found during this acceptance pass and document how to run the demo/previewer.
 
 - [ ] Lint, formatting, unit tests, typechecking, and the production build
@@ -164,16 +185,17 @@ found during this acceptance pass and document how to run the demo/previewer.
 - [ ] Smoke-test the built game and previewer under both deployment subpaths;
       confirm no missing assets or console errors and verify the QA deployment.
 - [ ] Complete a walkthrough on at least one real phone and desktop browser:
-      navigate the route, retarget while walking, rotate the phone, and inspect
+      hold to walk, drag to steer, release to stop, keep holding as the camera
+      pans, stop at an obstacle, steer away, rotate the phone, and inspect
       animations. Record device/browser, results, and observed performance;
       emulation alone does not count as a real-device check.
 
 ## Delivery order and completion
 
-Start with **1.1**, then **1.2**. Navigation and camera work proceed through
-**1.3 → 1.4**, while sprites and previewer can proceed through **1.5 → 1.6** once
-collision is in place. **1.7** joins the camera and sprite work; **1.8** closes the
-phase after all previous tasks are complete.
+Start with **1.1 → 1.2 → 1.3**: island, hold-to-move controls, then collision.
+After that, the camera (**1.4**) and sprites/previewer (**1.5 → 1.6**) can proceed
+independently. **1.7** joins the camera and sprite work; **1.8** closes the phase
+after all previous tasks are complete.
 
 For each task, run the existing CI checks and add focused tests for new pure
 logic or meaningful regressions. Include the task's demo steps in its review.
