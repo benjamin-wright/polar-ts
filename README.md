@@ -16,12 +16,13 @@ npm ci
 npm run dev        # dev server (game at /, dev previewer at /dev/)
 ```
 
-The current demo renders the first island with a placeholder player. Hold a
-finger or the primary mouse button inside the island to move toward it, drag
-to steer, and release to stop. Walking speed and the near-player dead zone are
-configured in `assets/data/player-movement.json`, along with the collision
-footprint. Water, rocks, and map edges stop movement; keep holding and drag toward
-open ground to move away. The following camera is the next Phase 1 task. See the
+The current demo renders the first island with a placeholder player. Tap to walk
+to a location after releasing, or hold a finger or the primary mouse button and
+drag to steer. Releasing a drag or long hold stops movement. Taps stop at the first
+obstacle; held movement slides along rocks, shorelines, and map boundaries.
+Walking speed, the follow dead zone, tap thresholds, and the collision footprint
+are configured in `assets/data/player-movement.json`.
+The following camera is the next Phase 1 task. See the
 [map format and preview notes](assets/tilemaps/README.md) to edit the island or
 review this slice.
 

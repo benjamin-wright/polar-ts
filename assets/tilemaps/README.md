@@ -34,7 +34,9 @@ world bounds, ordered tile layers, spawn coordinates, and a combined row-major
 walkability grid. A cell is walkable only when its terrain and any obstacle are
 both walkable. Invalid exports fail with the offending field in the error.
 The collision system sweeps the player's whole footprint against this grid after
-movement integration, stopping at first contact without sliding or pathfinding.
+movement integration. Tap destinations stop at first contact; held movement
+slides along boundaries. Both modes sweep the whole movement segment without
+pathfinding, and the sliding segment is checked against other obstacles too.
 The full footprint must fit at the spawn; the game rejects a spawn too close to
 blocked ground even if its centre tile is walkable.
 
@@ -47,31 +49,39 @@ Vite. Keep assets relative to the app so the same build works at `/polar/` and
 ## Preview this slice
 
 Run `nvm use`, then `npm run dev`. The full island is centred and scaled down
-when necessary, with the blue placeholder player at the spawn. Hold a finger or
-the primary mouse button inside the island to move straight toward it, drag to
-steer, and release to stop. Leaving the island's rectangular viewport or losing
-focus clears the hold; press again to resume. Presses in the surrounding margin
-are ignored. Water, rocks, and map boundaries stop movement. The camera still fits
-the whole map until the follow-camera task in 1.4.
+when necessary, with the blue placeholder player at the spawn. Tap to walk to a
+location after release. Hold a finger or the primary mouse button to follow it,
+drag to steer, and release a drag or long hold to stop. Leaving the island's
+rectangular viewport during a hold, losing focus, or resizing cancels movement;
+press again to resume. Presses in the surrounding margin are ignored. The camera
+still fits the whole map until the follow-camera task in 1.4.
 
 `assets/data/player-movement.json` configures `walkSpeed` in world pixels per
 second and `deadZone` as a radius in world pixels. Reaching the aim point or its
 dead zone stops movement while keeping the hold active, so dragging away resumes
 travel without another press. Only the first primary pointer controls movement.
+`tap.maxDurationMs` (250 ms) and `tap.maxTravelPx` (10 CSS pixels) distinguish
+quick taps from long holds and drags. Moving beyond that distance counts as a
+drag even if the pointer returns to its starting point. A tap keeps a fixed world
+destination, ignores the follow dead zone, and clears on arrival, collision, or
+cancellation. A new tap or hold replaces it.
 `footprint.halfWidth` and `footprint.halfHeight` configure a centred, axis-aligned
 ground footprint (currently 24 × 24 pixels). Touching a tile edge is allowed;
 overlapping blocked ground is not. Collision checks the entire movement segment,
-so even a large step cannot cross a rock or a strip of water. Both movement axes
-stop together; steering away resumes travel immediately without clearing the hold.
+so even a large step cannot cross a rock or a strip of water. Taps stop both axes
+at contact. Following preserves tangential movement along the boundary without
+adding speed; direct head-on contact or an inside corner still stops translation.
 
 For review, check the ice shore, rocks over snow, player above the terrain, and
-accurate movement after resizing. From spawn, hold to the right beyond the rocks:
-the player approaches the first rock and stops. Keep holding, then drag diagonally
-back toward open snow to move away. Head north toward the water and check that the
-footprint stops at the ice edge. Release to stop, and drag into the surrounding
-margin to check cancellation. Repeat after resizing.
+accurate movement after resizing. Tap open snow, release, and watch the player
+reach the destination. Tap beyond a rock and check that movement stops at the
+rock. Then hold diagonally into its edge: the player should slide along it; drag
+away to return to open ground. Repeat at the shoreline, and check that a long
+hold or drag stops on release. Drag into the surrounding margin and resize
+during a tap journey to check cancellation. Repeat at a phone-sized viewport.
 `npm test` validates map exports, steering, pointer cancellation, player-only
-control, and swept collision (corners, narrow gaps, large steps, and blocked holds).
+control, tap completion/cancellation, and swept collision (sliding, tile seams,
+corners, narrow gaps, large steps, and blocked holds).
 `npm run build` produces the static assets for subpath smoke testing.
 
 Format reference: [Tiled JSON map format](https://doc.mapeditor.org/en/stable/reference/json-map-format/).

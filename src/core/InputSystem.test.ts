@@ -50,9 +50,129 @@ function setup(isPlayable?: (point: { x: number; y: number }) => boolean) {
 
 afterEach(() => {
   for (const input of inputs.splice(0)) input.destroy();
+  vi.restoreAllMocks();
 });
 
 describe('InputSystem holds', () => {
+  it('ignores a margin press without cancelling an existing tap journey', () => {
+    const { surface, input } = setup((point) => point.y >= 50);
+    surface.pointer('pointerdown');
+    surface.pointer('pointerup', { buttons: 0 });
+    expect(input.consumeMovement().tap).not.toBeNull();
+    surface.pointer('pointerdown', { clientY: 75 });
+    surface.pointer('pointerup', { clientY: 75, buttons: 0 });
+    expect(input.consumeMovement()).toEqual({
+      held: null,
+      following: false,
+      tap: null,
+      cancelled: false,
+    });
+  });
+
+  it('confirms following on drag or elapsed hold time, keeping initial taps straight', () => {
+    const { surface, input } = setup();
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+    surface.pointer('pointerdown');
+    expect(input.consumeMovement().following).toBe(false);
+    now.mockReturnValue(251);
+    expect(input.consumeMovement().following).toBe(true);
+    surface.pointer('pointerup', { buttons: 0 });
+    surface.pointer('pointerdown');
+    surface.pointer('pointermove', { clientX: 220 });
+    expect(input.consumeMovement().following).toBe(true);
+  });
+
+  it('emits a short tap once, including when press and release occur between simulation ticks', () => {
+    const { surface, input } = setup();
+    surface.pointer('pointerdown');
+    surface.pointer('pointerup', { buttons: 0, clientX: 203, clientY: 152 });
+    expect(input.consumeMovement()).toEqual({
+      held: null,
+      following: false,
+      tap: { x: 103, y: 102 },
+      cancelled: true,
+    });
+    // Capture loss after a normal release must not turn a tap into cancellation.
+    surface.pointer('lostpointercapture');
+    expect(input.consumeMovement()).toEqual({
+      held: null,
+      following: false,
+      tap: null,
+      cancelled: false,
+    });
+  });
+
+  it('a stationary long hold stops on release instead of creating a tap destination', () => {
+    const { surface, input } = setup();
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0);
+    surface.pointer('pointerdown');
+    now.mockReturnValue(300);
+    expect(input.consumeMovement().held).toEqual({ x: 100, y: 100 });
+    surface.pointer('pointerup', { buttons: 0 });
+    expect(input.consumeMovement()).toEqual({
+      held: null,
+      following: false,
+      tap: null,
+      cancelled: true,
+    });
+  });
+
+  it('a drag that returns to its starting point cannot become a tap', () => {
+    const { surface, input } = setup();
+    surface.pointer('pointerdown');
+    surface.pointer('pointermove', { clientX: 230 });
+    surface.pointer('pointermove', { clientX: 200 });
+    surface.pointer('pointerup', { buttons: 0 });
+    expect(input.consumeMovement().tap).toBeNull();
+  });
+
+  it('rejects an out-of-bounds release even without an intervening pointer-move event', () => {
+    const { surface, input } = setup();
+    surface.pointer('pointerdown');
+    surface.pointer('pointerup', { buttons: 0, clientX: 900 });
+    expect(input.consumeMovement()).toEqual({
+      held: null,
+      following: false,
+      tap: null,
+      cancelled: true,
+    });
+  });
+
+  it.each(['blur', 'resize', 'pagehide'])('%s cancels a queued or already-consumed tap', (type) => {
+    const { surface, input } = setup();
+    for (const consumed of [false, true]) {
+      surface.pointer('pointerdown');
+      surface.pointer('pointerup', { buttons: 0 });
+      if (consumed) expect(input.consumeMovement().tap).not.toBeNull();
+      surface.view.dispatchEvent(new Event(type));
+      expect(input.consumeMovement()).toEqual({
+        held: null,
+        following: false,
+        tap: null,
+        cancelled: true,
+      });
+    }
+  });
+
+  it('never generates taps on pointer cancellation or from another finger', () => {
+    const { surface, input } = setup();
+    surface.pointer('pointerdown');
+    surface.pointer('pointerup', { pointerId: 2, isPrimary: false, buttons: 0 });
+    expect(input.consumeMovement()).toEqual({
+      held: { x: 100, y: 100 },
+      following: false,
+      tap: null,
+      cancelled: false,
+    });
+    surface.pointer('pointercancel');
+    expect(input.consumeMovement()).toEqual({
+      held: null,
+      following: false,
+      tap: null,
+      cancelled: true,
+    });
+  });
+
   it('continues a stationary hold across polls, updates on drag, and stops on release', () => {
     const { surface, input } = setup();
     expect(input.heldPoint()).toBeNull();

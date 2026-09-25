@@ -1,6 +1,10 @@
 {
   "walkSpeed": 200,
   "deadZone": 6,
+  "tap": {
+    "maxDurationMs": 250,
+    "maxTravelPx": 10
+  },
   "footprint": {
     "halfWidth": 12,
     "halfHeight": 12

@@ -56,33 +56,33 @@ function axisInterval(start: number, delta: number, min: number, max: number): [
   return [Math.min(a, b), Math.max(a, b)];
 }
 
-/**
- * Sweep a centred rectangular footprint along the entire proposed segment.
- * Expanding each blocked tile by the footprint reduces the test to segment/box
- * intersection. Both axes stop at the earliest contact: no tunnelling or sliding.
- */
-export function sweepFootprint(
+/** Earliest contact and the blocked axes, including simultaneous corner hits. */
+function firstContact(
   map: CollisionMap,
   from: Point,
   to: Point,
   footprint: Footprint,
-): Point {
-  if (!isFootprintClear(map, from, footprint) || !Number.isFinite(to.x) || !Number.isFinite(to.y)) {
-    return { ...from };
-  }
+): { time: number; blockX: boolean; blockY: boolean } {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  const distance = Math.hypot(dx, dy);
-  if (distance === 0) return { ...from };
-
-  let contact = 1;
+  let contact = { time: 1, blockX: false, blockY: false };
+  const consider = (time: number, blockX: boolean, blockY: boolean): void => {
+    if (time < 0 || time > 1) return;
+    if (time < contact.time - 1e-10) {
+      contact = { time, blockX, blockY };
+    } else if (Math.abs(time - contact.time) <= 1e-10) {
+      contact.time = Math.min(time, contact.time);
+      contact.blockX ||= blockX;
+      contact.blockY ||= blockY;
+    }
+  };
   // World boundaries constrain the footprint, not just its centre.
   const maxX = map.width * map.tileWidth - footprint.halfWidth;
   const maxY = map.height * map.tileHeight - footprint.halfHeight;
-  if (dx > 0) contact = Math.min(contact, (maxX - from.x) / dx);
-  if (dx < 0) contact = Math.min(contact, (footprint.halfWidth - from.x) / dx);
-  if (dy > 0) contact = Math.min(contact, (maxY - from.y) / dy);
-  if (dy < 0) contact = Math.min(contact, (footprint.halfHeight - from.y) / dy);
+  if (dx > 0) consider((maxX - from.x) / dx, true, false);
+  if (dx < 0) consider((footprint.halfWidth - from.x) / dx, true, false);
+  if (dy > 0) consider((maxY - from.y) / dy, false, true);
+  if (dy < 0) consider((footprint.halfHeight - from.y) / dy, false, true);
 
   // Only inspect cells in the swept footprint's bounding box, clipped to the map.
   const left = Math.max(
@@ -119,11 +119,89 @@ export function sweepFootprint(
       const enter = Math.max(enterX, enterY);
       const exit = Math.min(exitX, exitY);
       // Open intervals allow moving away from or parallel to a touching edge.
-      if (enter < exit && exit > 0 && enter < contact) contact = Math.max(0, enter);
+      if (enter < exit && exit > 0) {
+        consider(Math.max(0, enter), enterX >= enterY, enterY >= enterX);
+      }
     }
   }
-  if (contact === 1) return { ...to };
-  // A tiny world-space clearance avoids rounding into a tile at exact contact.
-  const travel = Math.max(0, contact - 1e-7 / distance);
-  return { x: from.x + dx * travel, y: from.y + dy * travel };
+  return contact;
+}
+
+function resolveFootprint(
+  map: CollisionMap,
+  from: Point,
+  to: Point,
+  footprint: Footprint,
+  slide: boolean,
+): Point {
+  if (!isFootprintClear(map, from, footprint) || !Number.isFinite(to.x) || !Number.isFinite(to.y)) {
+    return { ...from };
+  }
+  let position = { ...from };
+  let remaining = { x: to.x - from.x, y: to.y - from.y };
+  // Each contact removes at least one motion axis. Two sweeps cover a wall slide
+  // followed by another wall/corner, including large steps and thin obstacles.
+  for (let pass = 0; pass < 2; pass++) {
+    const distance = Math.hypot(remaining.x, remaining.y);
+    if (distance === 0) break;
+    const target = pass === 0 ? to : { x: position.x + remaining.x, y: position.y + remaining.y };
+    const contact = firstContact(map, position, target, footprint);
+    if (contact.time === 1) return { ...target };
+    // Keep a tiny world-space clearance so rounding never places us inside a tile.
+    const travel = Math.max(0, contact.time - 1e-7 / distance);
+    position = { x: position.x + remaining.x * travel, y: position.y + remaining.y * travel };
+    if (!slide) break;
+    if (contact.blockX && contact.blockY) {
+      // Adjacent tiles can report a corner on an otherwise flat wall. Sweep both
+      // possible tangents against the whole grid instead of snagging on the seam.
+      // At a real inside corner both sweeps stop; at an outside corner choose the
+      // tangent with more progress. Each candidate still checks its full segment.
+      const alongX = resolveFootprint(
+        map,
+        position,
+        {
+          x: position.x + remaining.x * (1 - travel),
+          y: position.y,
+        },
+        footprint,
+        false,
+      );
+      const alongY = resolveFootprint(
+        map,
+        position,
+        {
+          x: position.x,
+          y: position.y + remaining.y * (1 - travel),
+        },
+        footprint,
+        false,
+      );
+      return Math.abs(alongX.x - position.x) >= Math.abs(alongY.y - position.y) ? alongX : alongY;
+    }
+    remaining = {
+      x: contact.blockX ? 0 : remaining.x * (1 - travel),
+      y: contact.blockY ? 0 : remaining.y * (1 - travel),
+    };
+  }
+  return position;
+}
+
+/** Straight-line sweep for tap destinations; stops at first contact. */
+export function sweepFootprint(
+  map: CollisionMap,
+  from: Point,
+  to: Point,
+  footprint: Footprint,
+): Point {
+  return resolveFootprint(map, from, to, footprint, false);
+}
+
+/** Follow movement keeps its tangential displacement after hitting a boundary. */
+export function slideFootprint(
+  map: CollisionMap,
+  from: Point,
+  to: Point,
+  footprint: Footprint,
+): Point {
+  return resolveFootprint(map, from, to, footprint, true);
 }

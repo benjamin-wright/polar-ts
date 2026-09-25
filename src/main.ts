@@ -38,7 +38,11 @@ async function main(): Promise<void> {
   buildSpriteTextures(app.renderer);
 
   const world = createGameWorld();
-  const input = new InputSystem(app.canvas, (point) => tileMap.toWorld(point) !== null);
+  const input = new InputSystem(
+    app.canvas,
+    (point) => tileMap.toWorld(point) !== null,
+    movementConfig.tap,
+  );
   const renderSync = new RenderSync(world);
   tileMap.container.addChild(renderSync.container);
   app.stage.addChild(tileMap.container);
@@ -52,8 +56,17 @@ async function main(): Promise<void> {
   const loop = new GameLoop();
   app.ticker.add((ticker) => {
     loop.advance(ticker.deltaMS / 1000, (step) => {
-      const held = input.heldPoint();
-      playerControllerSystem(world, held ? tileMap.toWorld(held) : null, step);
+      const { held, following, tap, cancelled } = input.consumeMovement();
+      playerControllerSystem(
+        world,
+        {
+          held: held ? tileMap.toWorld(held) : null,
+          following,
+          tap: tap ? tileMap.toWorld(tap) : null,
+          cancelled,
+        },
+        step,
+      );
       movementSystem(world, step);
       collisionSystem(world, map, step);
     });

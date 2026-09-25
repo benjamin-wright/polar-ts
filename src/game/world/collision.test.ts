@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import island from '../../../assets/tilemaps/island.json';
 import movementConfig from '../../../assets/data/player-movement.json';
-import { isFootprintClear, sweepFootprint } from './collision';
+import { isFootprintClear, slideFootprint, sweepFootprint } from './collision';
 import { parseTileMap } from './tilemap';
 
 function grid(blocked: [number, number][] = []) {
@@ -155,5 +155,78 @@ describe('sweepFootprint', () => {
     expect(isFootprintClear(map, point, footprint)).toBe(false);
     expect(sweepFootprint(map, point, { x: 60, y: 35 }, footprint)).toEqual(point);
     expect(isFootprintClear(map, { x: 1, y: 15 }, footprint)).toBe(false);
+  });
+});
+
+describe('slideFootprint', () => {
+  it('keeps tangential movement along a vertical wall without adding speed', () => {
+    const map = grid(Array.from({ length: 8 }, (_, row) => [4, row]));
+    const from = { x: 15, y: 15 };
+    const result = slideFootprint(map, from, { x: 75, y: 35 }, footprint);
+    expect(result.x).toBeCloseTo(38, 6);
+    expect(result.y).toBeCloseTo(35, 6);
+    expect(Math.hypot(result.x - from.x, result.y - from.y)).toBeLessThan(Math.hypot(60, 20));
+    expect(isFootprintClear(map, result, footprint)).toBe(true);
+  });
+
+  it('slides along horizontal walls and in negative directions', () => {
+    const map = grid(Array.from({ length: 10 }, (_, col) => [col, 3]));
+    const result = slideFootprint(map, { x: 75, y: 65 }, { x: 25, y: 15 }, footprint);
+    expect(result.x).toBeCloseTo(25, 6);
+    expect(result.y).toBeCloseTo(42, 6);
+    expect(isFootprintClear(map, result, footprint)).toBe(true);
+  });
+
+  it('sweeps the sliding segment against a second obstacle even with a large step', () => {
+    const map = grid([
+      ...Array.from({ length: 8 }, (_, row): [number, number] => [4, row]),
+      [3, 5],
+    ]);
+    const result = slideFootprint(map, { x: 15, y: 15 }, { x: 95, y: 75 }, footprint);
+    expect(result.x).toBeCloseTo(38, 6);
+    expect(result.y).toBeCloseTo(48, 6);
+    expect(isFootprintClear(map, result, footprint)).toBe(true);
+  });
+
+  it('slides along map bounds and stops where two boundaries meet', () => {
+    const map = grid();
+    const result = slideFootprint(map, { x: 15, y: 15 }, { x: -30, y: 200 }, footprint);
+    expect(result.x).toBeCloseTo(2, 6);
+    expect(result.y).toBeCloseTo(78, 6);
+    expect(isFootprintClear(map, result, footprint)).toBe(true);
+  });
+
+  it('cannot leak through a simultaneous two-wall corner', () => {
+    const map = grid([
+      [4, 2],
+      [3, 3],
+    ]);
+    const result = slideFootprint(map, { x: 28, y: 18 }, { x: 68, y: 58 }, footprint);
+    expect(result.x).toBeCloseTo(38, 6);
+    expect(result.y).toBeCloseTo(28, 6);
+    expect(isFootprintClear(map, result, footprint)).toBe(true);
+  });
+
+  it('rejects narrow gaps and remains stable when pushing directly into a wall', () => {
+    const map = grid([
+      [4, 2],
+      [4, 4],
+    ]);
+    const wide = { halfWidth: 2, halfHeight: 5.1 };
+    const target = { x: 75, y: 35 };
+    const first = slideFootprint(map, { x: 15, y: 35 }, target, wide);
+    let position = first;
+    for (let i = 0; i < 120; i++) position = slideFootprint(map, position, target, wide);
+    expect(position.x).toBeCloseTo(38, 6);
+    expect(position.y).toBe(35);
+    expect(position.x).toBeCloseTo(first.x, 10);
+    expect(isFootprintClear(map, position, wide)).toBe(true);
+  });
+
+  it('allows tangent travel from exact contact and steering away from the wall', () => {
+    const map = grid([[4, 3]]);
+    const from = { x: 38, y: 35 };
+    expect(slideFootprint(map, from, { x: 55, y: 38 }, footprint)).toEqual({ x: 38, y: 38 });
+    expect(slideFootprint(map, from, { x: 25, y: 25 }, footprint)).toEqual({ x: 25, y: 25 });
   });
 });

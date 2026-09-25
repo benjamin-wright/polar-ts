@@ -7,6 +7,7 @@ import {
   Sprite,
   Transform,
   Velocity,
+  WalkIntent,
 } from '../../ecs/components';
 import type { World } from '../../ecs/world';
 
@@ -19,6 +20,10 @@ export function spawnPlayer(world: World, x: number, y: number): number {
   addComponent(world, eid, Health);
   addComponent(world, eid, PlayerControlled);
   addComponent(world, eid, Collider);
+  addComponent(world, eid, WalkIntent);
+  WalkIntent.mode[eid] = 'idle';
+  WalkIntent.x[eid] = x;
+  WalkIntent.y[eid] = y;
   Transform.x[eid] = x;
   Transform.y[eid] = y;
   Transform.previousX[eid] = x;

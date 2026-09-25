@@ -1,7 +1,7 @@
 import { addComponent, addEntity } from 'bitecs';
 import { describe, expect, it } from 'vitest';
 import island from '../../../assets/tilemaps/island.json';
-import { Collider, Transform, Velocity } from '../../ecs/components';
+import { Collider, Transform, Velocity, WalkIntent } from '../../ecs/components';
 import { movementSystem } from '../../ecs/systems/movement';
 import { createGameWorld } from '../../ecs/world';
 import { playerControllerSystem } from '../player/playerController';
@@ -17,7 +17,7 @@ function setup() {
   map.walkable[8 * map.width + 12] = false;
   const player = spawnPlayer(world, 304, 272);
   const tick = (aim: { x: number; y: number } | null, dt = 1 / 60): void => {
-    playerControllerSystem(world, aim, dt);
+    playerControllerSystem(world, { held: aim, following: true, tap: null, cancelled: false }, dt);
     movementSystem(world, dt);
     collisionSystem(world, map, dt);
   };
@@ -85,5 +85,78 @@ describe('controller → integration → collision', () => {
     expect(Transform.x[ghost]).toBe(504);
     expect(Velocity.x[ghost]).toBe(200);
     expect(Transform.x[solid]).toBeCloseTo(380, 6);
+  });
+
+  it('slides held movement along a wall while taps stop at first contact', () => {
+    for (const mode of ['follow', 'tap'] as const) {
+      const { world, map, player } = setup();
+      for (let row = 0; row < map.height; row++) map.walkable[row * map.width + 12] = false;
+      const aim = { x: 600, y: 340 };
+      playerControllerSystem(
+        world,
+        {
+          held: mode === 'follow' ? aim : null,
+          following: mode === 'follow',
+          tap: mode === 'tap' ? aim : null,
+          cancelled: false,
+        },
+        2,
+      );
+      movementSystem(world, 2);
+      collisionSystem(world, map, 2);
+      expect(Transform.x[player]).toBeCloseTo(372, 6);
+      if (mode === 'follow') {
+        expect(Transform.y[player]).toBeCloseTo(340, 6);
+        expect(WalkIntent.mode[player]).toBe('follow');
+      } else {
+        expect(Transform.y[player]).toBeCloseTo(272 + (68 * 68) / 296, 6);
+        expect(WalkIntent.mode[player]).toBe('idle');
+        const stoppedY = Transform.y[player];
+        playerControllerSystem(
+          world,
+          { held: null, following: false, tap: null, cancelled: false },
+          1 / 60,
+        );
+        movementSystem(world, 1 / 60);
+        collisionSystem(world, map, 1 / 60);
+        expect(Transform.y[player]).toBe(stoppedY);
+        expect(Velocity.y[player]).toBe(0);
+      }
+    }
+  });
+
+  it('clears the tap on arrival without overshoot or a persistent walking intent', () => {
+    const { world, map, player } = setup();
+    const tap = { x: 307, y: 274 };
+    playerControllerSystem(world, { held: null, following: false, tap, cancelled: false }, 0.1);
+    movementSystem(world, 0.1);
+    collisionSystem(world, map, 0.1);
+    expect(Transform.x[player]).toBe(tap.x);
+    expect(Transform.y[player]).toBe(tap.y);
+    expect(WalkIntent.mode[player]).toBe('idle');
+  });
+
+  it('does not slide a short press before release, then slides once following is confirmed', () => {
+    const { world, map, player } = setup();
+    const aim = { x: 600, y: 340 };
+    Transform.x[player] = 372;
+    playerControllerSystem(
+      world,
+      { held: aim, following: false, tap: null, cancelled: false },
+      1 / 60,
+    );
+    movementSystem(world, 1 / 60);
+    collisionSystem(world, map, 1 / 60);
+    expect(Transform.x[player]).toBe(372);
+    expect(Transform.y[player]).toBe(272);
+    playerControllerSystem(
+      world,
+      { held: aim, following: true, tap: null, cancelled: false },
+      1 / 60,
+    );
+    movementSystem(world, 1 / 60);
+    collisionSystem(world, map, 1 / 60);
+    expect(Transform.x[player]).toBe(372);
+    expect(Transform.y[player]).toBeGreaterThan(272);
   });
 });

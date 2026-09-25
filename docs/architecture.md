@@ -10,7 +10,7 @@ animations, and sailing physics tuning.
 
 Key game features:
 
-- **Exploration**: top-down tile-based world with continuous, hold-to-move
+- **Exploration**: top-down tile-based world with tap destinations and hold-to-move
   controls and a camera that pans to follow the player.
 - **Resource gathering**: harvestable resource nodes feeding the economy.
 - **Supply-and-demand economy**: per-port stock and dynamic prices.
@@ -29,7 +29,7 @@ Key game features:
 | ECS                 | bitecs                                                                       | Minimal, fast, structure-of-arrays ECS that stays out of the way. Alternatives: miniplex (more ergonomic, slower) or a small hand-rolled ECS — noted as fallbacks                                                                                            |
 | Physics             | Custom kinematic model (pure functions, no library)                          | The sailing model is the game's differentiator; planck.js/matter.js rigid-body physics would not model sail/keel/rudder force balance any better than ~100 lines of testable math                                                                            |
 | Tile maps           | Tiled editor → JSON export, thin custom render layer over Pixi               | Industry-standard editor; our maps are simple enough that pixi-tilemap (unmaintained) isn't needed                                                                                                                                                           |
-| Land movement       | Continuous hold-to-move steering with straight-line collision checks         | World-space positions and headings are independent of tile resolution; terrain tiles describe impassable ground, while collision stops movement at obstacles                                                                                                 |
+| Land movement       | Tap destinations and continuous hold-to-move steering with swept collision   | World-space positions and headings are independent of tile resolution; taps stop at obstacles, while held movement slides along boundaries                                                                                                                   |
 | Audio (later phase) | Howler                                                                       | De-facto standard, tiny                                                                                                                                                                                                                                      |
 | Dialogue content    | Data-driven JSON now; Yarn Spinner evaluated later if branching gets complex | Keeps writing decoupled from code                                                                                                                                                                                                                            |
 | Dev previewer UI    | Tweakpane for parameter panels + plain DOM                                   | Zero-framework controls for sliders/toggles; no React needed                                                                                                                                                                                                 |
@@ -73,7 +73,7 @@ src/
   ecs/         world setup, shared components (Transform, Velocity, Sprite, Health, Inventory...)
   game/
     world/     tilemap loading, collision grid, chunking, wind/current vector fields
-    player/    hold-to-move controller, swimming, embark/disembark
+    player/    tap/hold movement controller, swimming, embark/disembark
     sailing/   windfield, sail model, hull model, rudder, jibe detection, damage
     economy/   goods, markets, price engine, stock simulation
     dialogue/  dialogue runner, portrait metadata
@@ -145,21 +145,28 @@ imposes no constraint here.
   movement is no faster than axial movement. A small dead zone around the player
   prevents jitter, and movement never overshoots the current aim point. Walking
   speed and dead-zone size are data-driven tuning values.
+- A quick tap saves a world-space destination and continues moving after release,
+  arriving exactly at that point without the follow dead zone. Tap duration and
+  pointer-travel thresholds are configured in JSON; a drag or long hold releases
+  without leaving a destination. A new tap replaces the destination, and a new
+  hold takes over immediately without resuming the old destination afterwards.
 - The camera pans with the player. Recompute the aim from the held screen
   position and current camera transform each simulation step, even when the
   pointer has not moved. Holding ahead therefore continues steering ahead as
   the world scrolls, rather than retaining the initial world destination.
-- Release, cancellation, lost pointer capture, window blur, or leaving the
-  playable viewport stops movement and clears the hold. A new press starts it
-  again. Reaching the aim point or its dead zone stops translation while the
-  hold remains active; dragging away resumes movement.
+- Releasing a drag or long hold stops following. Pointer cancellation, unexpected
+  lost capture, window blur, or viewport changes cancel movement; cancellation
+  also clears any tap destination. Leaving the playable viewport during a hold
+  cancels that gesture. Reaching the follow aim point or its dead zone stops
+  translation while the hold remains active; dragging away resumes movement.
 - Terrain tiles supply collision data without snapping the player's position
   or heading to a grid. Check the player's continuous footprint along each
-  movement step and stop at the first obstacle, shoreline, or world boundary.
-  Aiming at impassable ground still moves toward it until collision. There is
-  no automatic obstacle avoidance, sliding, or path planner; the player steers
-  around obstacles manually. While blocked, the hold remains active so steering
-  into a clear direction resumes movement without lifting the finger.
+  movement step. Taps stop at the first obstacle, shoreline, or world boundary
+  and clear their destination. Held movement removes the blocked component of
+  motion and slides along the boundary, checking that sliding segment against
+  other obstacles too. Head-on contact and inside corners stop translation; the
+  hold stays active so dragging can steer away. There is no path planner or
+  automatic route around an obstacle.
 - Sailing: on-screen cluster — rudder ◀ ▶ buttons and sheet in/out buttons (or
   slider), sized for thumbs, respecting safe-area insets.
 - Viewport: fixed logical resolution scaled to fit, `devicePixelRatio`-aware, PWA

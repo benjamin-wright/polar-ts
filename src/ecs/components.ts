@@ -43,6 +43,13 @@ export const Inventory = {
 /** Marker for the entity controlled by player input. */
 export const PlayerControlled = {};
 
+/** A tap fixes a world destination; follow mode uses the live pointer each tick. */
+export const WalkIntent = {
+  mode: [] as ('idle' | 'tap' | 'follow')[],
+  x: [] as number[],
+  y: [] as number[],
+};
+
 /** Axis-aligned ground footprint centred on Transform, in world pixels. */
 export const Collider = {
   halfWidth: [] as number[],
