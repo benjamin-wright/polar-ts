@@ -20,6 +20,10 @@ previewer panel #1 (animation preview) since asset iteration starts here.
 
 _Deliverable: walk around an island on your phone._
 
+See [Phase 1 deliverable tasks](./phase-1.md) for the implementation sequence,
+dependencies, and acceptance criteria. Each task should be a separate reviewable
+change that keeps the static build deployable.
+
 ## Phase 2 — Sailing
 
 Wind/current fields, boat entity, embark/disembark at docks, sail/keel/rudder
