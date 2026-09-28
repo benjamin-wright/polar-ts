@@ -1,4 +1,40 @@
-Side walk revision
+Superseded two-pose restrained stride experiments (2026-09-25)
+
+These prompts produced a draft that was not adopted. The game sheet is restored
+to its committed version. The eight-frame right walk study and its prompts are
+stored separately for preview review.
+
+Use case: precise-object-edit
+Edit target: this transparent 1254x1254 polar bear sprite atlas in a 4x4 grid.
+Primary request: replace the exaggerated side-facing walk poses with a RESTRAINED, SYMMETRICAL two-pose walk that fits the existing loop: stride A → idle → stride B → idle.
+Edit ONLY row 2 columns 3 and 4 (left-facing walking poses), and row 3 columns 3 and 4 (right-facing walking poses). Leave the other twelve sprites unchanged.
+For EACH of these four cells, use that row's column-1 IDLE bear as the base. Keep its exact head, torso, hip positions, body height, proportions, scale, and ground registration. The walking poses should look almost like idle, with only small leg swings.
+Stride A (column 3): near front paw shifts slightly forward and near rear paw slightly backward, each about 15–20 source pixels from its idle position. Far-side paws offset gently the opposite way.
+Stride B (column 4): reverse those shifts by the SAME amount: near front paw slightly backward and near rear paw slightly forward. Far-side paws reverse too.
+In BOTH poses, all legs remain long, relaxed, nearly straight and hanging down from the same shoulders/hips. Paws stay close to ground height, with at most 3–5 source pixels of lift. Keep identical leg lengths and equal, modest stride amplitudes on both sides of idle. Mirror this small gait between the left- and right-facing rows.
+NO curled legs, folded knees, high lifted paws, tucked limbs, lunges, splits, stretched bodies, or big push-offs. Do not reuse the current extended or curled walking poses: derive both restrained poses from the idle stance instead. Both front AND rear feet should move slightly, evenly and visibly.
+Preserve the exact 1254x1254 canvas, four equal rows and columns, original cell positions, palette and pixel-art style. Genuine TRANSPARENT PNG with actual alpha=0 outside sprites; no background, no checkerboard, no labels or grid lines.
+
+---
+
+Use case: precise-object-edit
+Refine ONLY the four side-facing walking cells (row 2 columns 3/4 and row 3 columns 3/4) of this 1254x1254, 4x4 polar bear atlas.
+The last edit made all three side poses almost identical. We need two visibly DIFFERENT but modest straight-leg strides, symmetrically around the idle pose in column 1.
+Use the column-1 idle head and torso exactly, without shifting or bobbing them. Swing the lower legs gently from the same hip/shoulder joints, keeping them almost straight and keeping each paw at its idle ground height. No paw lifts or curled knees.
+For the LEFT-facing row: in column 3, move the visible near FRONT paw 20 pixels LEFT of its idle position and the visible near REAR paw 20 pixels RIGHT of its idle position (slightly open stance). In column 4, move that same FRONT paw 20 pixels RIGHT of idle and the REAR paw 20 pixels LEFT of idle (slightly narrower stance). The two white paws must occupy opposite positions around their idle positions, not the same positions in both frames. Let the far blue legs make the opposite step.
+For the RIGHT-facing row mirror this exactly: column 3 front paw +20px right, rear paw -20px left; column 4 front paw -20px left, rear paw +20px right, relative to that row's idle pose.
+Keep the stride compact. Keep both white front and rear legs long and mostly straight. Do NOT bend any paw up toward the belly. Do not make a running lunge or large split stance.
+Preserve all twelve non-target cells, canvas size, exact grid positions, sprite body scale, dark outlines, shading, and colour. Output a PNG with a genuinely transparent alpha background; remove the checkerboard rather than painting it.
+
+---
+
+
+
+Final transparency retry for restrained strides
+
+Remove the checkerboard background. Make a transparent-background PNG of these sixteen bear sprites, with real alpha transparency. Keep the bears and their layout unchanged. No background pattern or background colour.
+
+Earlier side walk revision
 
 Use case: precise-object-edit
 Edit target: the supplied polar bear cub sprite sheet, a transparent 1254x1254 PNG arranged in four equal columns and four equal rows.

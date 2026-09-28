@@ -1,8 +1,12 @@
 import playerSheetUrl from '../../assets/sprites/polar-bear-cub.png?url';
+import walkStudyUrl from '../../assets/sprites/polar-bear-cub-walk-right.png?url';
 import { spriteSheets } from '../core/spriteSheets';
 import { SpriteSheet } from './sprites';
 
-const imageUrls: Readonly<Record<string, string>> = { 'polar-bear-cub.png': playerSheetUrl };
+const imageUrls: Readonly<Record<string, string>> = {
+  'polar-bear-cub.png': playerSheetUrl,
+  'polar-bear-cub-walk-right.png': walkStudyUrl,
+};
 const sheets = new Map<string, Promise<SpriteSheet>>();
 
 /** The game and previewer resolve the same Vite-bundled images and metadata. */

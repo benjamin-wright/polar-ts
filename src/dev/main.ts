@@ -57,7 +57,7 @@ async function main(): Promise<void> {
   import.meta.hot?.dispose(() => view.destroy());
 
   const syncTransport = (): void => {
-    const fps = preview.definition.animations[preview.state.clip].fps;
+    const fps = preview.fps;
     frame.max = String(preview.frameCount - 1);
     frame.value = String(preview.frame);
     frameValue.value = `${preview.frame + 1} / ${preview.frameCount}`;

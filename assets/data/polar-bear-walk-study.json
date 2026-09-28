@@ -1,0 +1,21 @@
+{
+  "image": "polar-bear-cub-walk-right.png",
+  "label": "Polar bear cub — right walk study",
+  "frameWidth": 443.5,
+  "frameHeight": 443.5,
+  "columns": 4,
+  "rows": 2,
+  "displayWidth": 48,
+  "displayHeight": 48,
+  "anchor": { "x": 0.5, "y": 0.82 },
+  "frameOffsets": {
+    "4": { "x": 0, "y": -14 },
+    "5": { "x": 0, "y": -14 },
+    "6": { "x": 0, "y": -14 },
+    "7": { "x": 0, "y": -14 }
+  },
+  "facings": { "right": 0 },
+  "animations": {
+    "walk": { "frames": [0, 1, 2, 3, 4, 5, 6, 7], "fps": 16 }
+  }
+}

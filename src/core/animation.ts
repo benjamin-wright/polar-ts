@@ -1,6 +1,12 @@
 export type Facing = 'down' | 'left' | 'right' | 'up';
 export type AnimationClip = 'idle' | 'walk';
 
+export interface AnimationSequence {
+  /** Frame offsets from the facing's starting row; may continue onto later rows. */
+  frames: readonly number[];
+  fps: number;
+}
+
 /** Atlas layout and playback data, shared by the game and developer previewer. */
 export interface SpriteSheetDefinition {
   image: string;
@@ -12,14 +18,25 @@ export interface SpriteSheetDefinition {
   displayWidth: number;
   displayHeight: number;
   anchor: { x: number; y: number };
-  facings: Record<Facing, number>;
-  animations: Record<AnimationClip, { frames: readonly number[]; fps: number }>;
+  /** Optional source-pixel adjustments keep individual poses registered. */
+  frameOffsets?: Readonly<Record<string, { x: number; y: number }>>;
+  facings: Partial<Record<Facing, number>>;
+  animations: Partial<Record<AnimationClip, AnimationSequence>>;
 }
 
 export interface AnimationState {
   clip: AnimationClip;
   facing: Facing;
   elapsed: number;
+}
+
+export function animationSequence(
+  definition: SpriteSheetDefinition,
+  state: AnimationState,
+): AnimationSequence {
+  const sequence = definition.animations[state.clip];
+  if (!sequence) throw new Error(`Sprite sheet ${definition.image} has no ${state.clip} clip`);
+  return sequence;
 }
 
 /** Select the dominant movement axis, retaining the current axis on diagonals. */
@@ -64,7 +81,7 @@ export function advancePlayback(
   dt: number,
   definition: SpriteSheetDefinition,
 ): AnimationState {
-  const animation = definition.animations[state.clip];
+  const animation = animationSequence(definition, state);
   return {
     ...state,
     elapsed: (state.elapsed + Math.max(0, dt)) % (animation.frames.length / animation.fps),
@@ -76,13 +93,17 @@ export function animationFrameIndex(
   definition: SpriteSheetDefinition,
   state: AnimationState,
 ): number {
-  const animation = definition.animations[state.clip];
+  const animation = animationSequence(definition, state);
   return Math.floor(Math.max(0, state.elapsed) * animation.fps + 1e-9) % animation.frames.length;
 }
 
 /** Row-major atlas frame; elapsed is simulation time in seconds. */
 export function animationFrame(definition: SpriteSheetDefinition, state: AnimationState): number {
-  const animation = definition.animations[state.clip];
+  const animation = animationSequence(definition, state);
   const index = animationFrameIndex(definition, state);
-  return definition.facings[state.facing] * definition.columns + animation.frames[index];
+  const row = definition.facings[state.facing];
+  if (row === undefined) {
+    throw new Error(`Sprite sheet ${definition.image} has no ${state.facing} facing`);
+  }
+  return row * definition.columns + animation.frames[index];
 }

@@ -73,7 +73,7 @@ describe('animation preview controls', () => {
     preview.speed = speed;
     preview.advance(0.2);
     expect(preview.state.elapsed).toBeCloseTo(0.2 * speed);
-    expect(sheet.animations.walk.fps).toBe(8);
+    expect(sheet.animations.walk?.fps).toBe(8);
   });
 
   it('resets the timeline when another sheet has a different frame count and rate', () => {
@@ -107,5 +107,37 @@ describe('animation preview controls', () => {
     expect(second.state).toEqual({ clip: 'walk', facing: 'right', elapsed: 0 });
     expect(second.speed).toBe(1);
     expect(second.zoom).toBe(4);
+  });
+
+  it('selects the available clip and facing when switching to the right-only walk study', () => {
+    const preview = new AnimationPreview(sheet);
+    preview.selectClip('idle');
+    preview.selectFacing('left');
+    preview.scrub(7);
+    preview.selectSheet(spriteSheets['walk-study']);
+    expect(preview.state).toEqual({ clip: 'walk', facing: 'right', elapsed: 0 });
+    expect(preview.frameCount).toBe(8);
+    expect(preview.fps).toBe(16);
+    expect(preview.playing).toBe(false);
+    preview.selectClip('idle');
+    preview.selectFacing('left');
+    expect(preview.state.clip).toBe('walk');
+    expect(preview.state.facing).toBe('right');
+    for (let frame = 0; frame < 8; frame++) {
+      preview.scrub(frame);
+      expect(animationFrame(preview.definition, preview.state)).toBe(frame);
+    }
+    preview.step(1);
+    expect(preview.frame).toBe(0);
+    preview.playing = true;
+    preview.advance(7 / 16);
+    expect(preview.frame).toBe(7);
+    preview.advance(1 / 16);
+    expect(preview.frame).toBe(0);
+    preview.selectSheet(sheet);
+    expect(preview.frameCount).toBe(4);
+    preview.selectClip('idle');
+    preview.selectFacing('left');
+    expect(preview.state).toEqual({ clip: 'idle', facing: 'left', elapsed: 0 });
   });
 });

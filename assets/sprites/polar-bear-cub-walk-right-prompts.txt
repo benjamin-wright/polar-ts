@@ -1,0 +1,48 @@
+Eight-frame right-facing walk study (2026-09-25)
+Built-in image generation tool. Final selected output: exec-6d8648ee-dbf9-4e1c-93de-ff34bdf461bf.png
+These prompts follow the selected image's lineage. Discarded variants are omitted.
+
+Use case: stylized-concept
+Asset type: production game sprite sheet, eight-frame quadruped walk.
+Reference image 1: the existing polar bear cub atlas. Match the RIGHT-facing cub in row 3 column 1 for character identity, proportions, head, ears, dark navy outlines, white fur and pale blue shaded far legs.
+Reference image 2: the horse's eight sequential walk silhouettes A–H. Use ONLY as a guide for planted feet, staggered four-leg timing and continuous contact/lift/passing/landing motion. Do not draw a horse or copy its long stride.
+
+Create exactly EIGHT sequential frames of the same small polar bear cub walking RIGHT, in a perfectly aligned FOUR COLUMNS by TWO ROWS atlas. Reading order is left to right then top to bottom; frame 8 flows seamlessly back to frame 1. Every frame is a distinct moment of ONE walk cycle, not separate character variations. No idle or blink frames.
+Canvas: 1536 by 768 pixels, eight equal 384x384 cells. Within every cell use the same fixed head and torso, same scale, same joint positions; head/torso must not drift horizontally. Ground baseline is y=330 relative to each cell. Body and head occupy roughly x=65..320 and y=85..275; limbs extend to baseline. Keep ample transparent margins.
+Movement: compact relaxed cub walk. Plant each paw, move it gradually backward relative to the body, then lift it only slightly, pass forward and set it down. All four legs actively step, especially the hind paws. Far legs are blue and visible between near legs. The near/far legs of each pair are half a cycle apart; hind and fore pair timing is staggered a quarter-cycle. Both halves must have equal stride length. Paw travel is about 36px total, lift no more than 12px. The near forepaw progresses forward contact, planted midstance, planted back, toe-off, slight lift, forward passing, lowering, next contact over the eight frames. Corresponding hind motion is staggered, not dragged.
+Keep the cute compact anatomy and crisp sprite style of reference 1. Mostly straight supporting legs; only gently bent swinging legs. Minimal body bob, no changes to face/head, no stretching, no leaping, no giant curled knees.
+Output a genuine TRANSPARENT RGBA PNG with alpha=0 outside the eight bears. No checkerboard painted into image, no ground lines, no shadows, no labels, no letters, no diagrams, no border, no grid lines. Only eight bear poses.
+
+---
+
+Edit only the LEFTMOST WHITE LEG of each polar bear in this 4-column, 2-row eight-frame sprite sheet. This leg is the REAR/HIND LEG below the rump at the LEFT end of each bear, farthest from the nose. Do NOT change the white FRONT leg under the head at the right end. Keep heads, torso, ears, all other legs, transparency, canvas size and grid exactly unchanged.
+The leftmost white rear paw currently points back to the LEFT in every cell. It must swing under the belly to the RIGHT in the middle of this cycle. Redraw this leftmost white leg from its fixed hip under the rump; the hip does not move.
+Precise edits, frame numbers in reading order:
+Frames 1 and 8: leave rear leg extending modestly down-left.
+Frame 2 (top row second): rear foot begins lifting, slightly closer to hip.
+Frame 3 (top row third): rear leg hangs nearly vertically; paw directly BELOW HIP, with small ground clearance.
+Frame 4 (top row last): rear leg slopes diagonally DOWN AND RIGHT from rump towards the center of the belly. Its WHITE paw is under the middle of the torso, just above ground.
+Frame 5 (bottom row first): rear leg reaches DOWN AND RIGHT, WHITE hind paw placed ON GROUND well under the middle of the belly, about 70 pixels RIGHT of its original position. The leftmost supporting foot behind it can be blue far hind leg.
+Frame 6 (bottom row second): rear WHITE paw moves halfway back toward below hip, on ground.
+Frame 7 (bottom row third): rear leg is nearly vertical with WHITE paw just behind hip, on ground.
+The bear is walking right. The white hind paw must alternate visibly BETWEEN left of hip AND right of hip over the loop. It must NOT stay on the left side of the hip in frames 3–6. Draw a straight or gently bent leg; do not curl the paw up against the belly.
+The entire edit must be confined to the lower LEFT HALF of each bear, beneath its rump/belly. Leave the foreleg under the head untouched. Preserve true transparent alpha outside the bears. No checkerboard or ground line.
+
+---
+
+Edit ONLY the WHITE FORELEG directly beneath the head at the RIGHT SIDE of each polar bear. Preserve the newly corrected hind/rear leg at the LEFT completely. Keep the exact 4x2 layout, canvas size, head/torso, character, blue far legs, style and transparent alpha.
+Frames read 1–4 top row, 5–8 bottom row. Make the near white foreleg trace ONE continuous contact → planted backwards → small lift → forward passing → landing cycle across all eight frames. It must not repeat the same movement twice.
+Frame 1: white FRONT paw placed forward toward the nose, about local x=295, on ground.
+Frame 2: front paw x=275, planted, almost vertical.
+Frame 3: front paw x=250, planted a little behind the shoulder.
+Frame 4: front paw x=228, behind shoulder at toe-off; leg slopes gently down LEFT from shoulder.
+Frame 5: front paw x=235, just lifted 12 pixels from ground, still behind shoulder. Small relaxed bend, not folded.
+Frame 6: front paw x=260, passing under shoulder, 15 pixels above ground.
+Frame 7: front paw x=284, forward swing, 8 pixels above ground.
+Frame 8: front paw x=300, lowering to forward contact, ready to flow into frame 1.
+The foreleg begins from the SAME shoulder in all cells. Keep its length and thickness constant, with only a gentle bend during the brief swing. No huge curl or tucked paw. The blue far foreleg should show opposite support where naturally visible but preserve the torso. No additional legs.
+Do NOT touch the REAR/HIND leg below the rump at left. Do NOT alter the face or the body registration. Background must remain real alpha=0 transparency, never a painted checkerboard.
+
+---
+
+Remove the checkerboard background. Make a transparent-background PNG of these eight bear sprites, with real alpha transparency. Keep the bears and their layout unchanged. No background pattern or background colour.

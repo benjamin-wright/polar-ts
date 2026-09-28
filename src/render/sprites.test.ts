@@ -2,6 +2,8 @@ import { removeEntity } from 'bitecs';
 import { Sprite as PixiSprite, Texture, TextureSource } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import sheetDataUrl from '../../assets/sprites/polar-bear-cub.png?inline';
+import studyDataUrl from '../../assets/sprites/polar-bear-cub-walk-right.png?inline';
+import type { SpriteSheetDefinition } from '../core/animation';
 import { spriteSheets } from '../core/spriteSheets';
 import { Animation } from '../ecs/components';
 import { createGameWorld } from '../ecs/world';
@@ -10,7 +12,7 @@ import { RenderSync } from './RenderSync';
 import { SpriteSheet } from './sprites';
 
 const definition = spriteSheets.player;
-function atlas() {
+function atlas(definition: SpriteSheetDefinition = spriteSheets.player) {
   return new Texture({
     source: new TextureSource({
       width: definition.frameWidth * definition.columns,
@@ -20,8 +22,12 @@ function atlas() {
 }
 
 describe('sprite sheet rendering', () => {
-  it('ships a transparent PNG matching the atlas metadata, with all frames in bounds', () => {
-    const png = Uint8Array.from(atob(sheetDataUrl.split(',')[1]), (char) => char.charCodeAt(0));
+  it.each([
+    ['player', sheetDataUrl],
+    ['walk-study', studyDataUrl],
+  ])('ships %s as a transparent PNG matching its atlas and frame metadata', (id, dataUrl) => {
+    const definition = spriteSheets[id];
+    const png = Uint8Array.from(atob(dataUrl.split(',')[1]), (char) => char.charCodeAt(0));
     const header = new DataView(png.buffer);
     expect([...png.subarray(1, 4)]).toEqual([80, 78, 71]); // PNG signature.
     expect(header.getUint32(16)).toBe(definition.frameWidth * definition.columns);
@@ -33,9 +39,13 @@ describe('sprite sheet rendering', () => {
     }
     for (const animation of Object.values(definition.animations)) {
       expect(animation.fps).toBeGreaterThan(0);
-      for (const column of animation.frames) {
-        expect(column).toBeGreaterThanOrEqual(0);
-        expect(column).toBeLessThan(definition.columns);
+      for (const offset of animation.frames) {
+        expect(offset).toBeGreaterThanOrEqual(0);
+        for (const row of Object.values(definition.facings)) {
+          expect(row * definition.columns + offset).toBeLessThan(
+            definition.rows * definition.columns,
+          );
+        }
       }
     }
   });
@@ -53,6 +63,44 @@ describe('sprite sheet rendering', () => {
 
   it('rejects a mismatched image instead of silently selecting the wrong regions', () => {
     expect(() => new SpriteSheet(definition, Texture.WHITE)).toThrow('dimensions do not match');
+  });
+
+  it('plays all eight study textures across the row boundary with stable registration', () => {
+    const study = spriteSheets['walk-study'];
+    const texture = atlas(study);
+    const sheet = new SpriteSheet(study, texture);
+    const frames = Array.from({ length: 8 }, (_, index) =>
+      sheet.texture({ clip: 'walk', facing: 'right', elapsed: index / 16 }),
+    );
+    expect(new Set(frames).size).toBe(8);
+    expect(frames[3].frame.x).toBe(1330.5);
+    expect(frames[3].frame.y).toBe(0);
+    expect(frames[4].frame.x).toBe(0);
+    expect(frames[4].frame.y).toBe(429.5);
+    for (const frame of frames) {
+      expect(frame.source).toBe(texture.source);
+      expect(frame.frame.width).toBe(443.5);
+      expect(frame.frame.height).toBe(443.5);
+      expect(frame.frame.right).toBeLessThanOrEqual(texture.width);
+      expect(frame.frame.bottom).toBeLessThanOrEqual(texture.height);
+    }
+    expect(sheet.texture({ clip: 'walk', facing: 'right', elapsed: 0.5 })).toBe(frames[0]);
+    texture.destroy(true);
+  });
+
+  it('rejects registration offsets that sample outside the image', () => {
+    const texture = atlas();
+    expect(
+      () =>
+        new SpriteSheet(
+          {
+            ...definition,
+            frameOffsets: { '0': { x: -1, y: 0 } },
+          },
+          texture,
+        ),
+    ).toThrow('out of bounds');
+    texture.destroy(true);
   });
 
   it('keeps the ground anchor fixed when animation frames change and removes deleted sprites', () => {
